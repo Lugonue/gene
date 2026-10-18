@@ -10,6 +10,15 @@ import { computeFov, rememberVisible } from './world/fov'
 import { fovRadius, organicHealCap } from './combat/formulas'
 import { applyRegen } from './health'
 import { actorRef } from './combat/attack'
+import {
+  disassembleAction,
+  dropAction,
+  equipAction,
+  pickupAction,
+  studyWornItems,
+  unequipAction,
+  useAction,
+} from './actions/items'
 
 export interface CommandResult {
   state: GameState
@@ -51,6 +60,7 @@ function playerTurn(ctx: Ctx, cost: number): void {
     return
   }
   applyRegen(ctx, p, cost)
+  studyWornItems(ctx)
   runWorld(ctx)
   observe(ctx)
 }
@@ -66,6 +76,18 @@ function performPlayerAction(ctx: Ctx, cmd: Command): ActionResult {
       return stairsAction(ctx, 'down')
     case 'stairsUp':
       return stairsAction(ctx, 'up')
+    case 'pickup':
+      return pickupAction(ctx)
+    case 'drop':
+      return dropAction(ctx, cmd.itemId)
+    case 'equip':
+      return equipAction(ctx, cmd.itemId, cmd.slot)
+    case 'unequip':
+      return unequipAction(ctx, cmd.slot)
+    case 'use':
+      return useAction(ctx, cmd.itemId, cmd.targetPartId, cmd.targetItemId)
+    case 'disassemble':
+      return disassembleAction(ctx, cmd.itemId)
     default:
       return reject('invalid')
   }

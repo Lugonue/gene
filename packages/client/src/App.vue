@@ -8,16 +8,37 @@ import HudPanel from './components/HudPanel.vue'
 import MessageLog from './components/MessageLog.vue'
 import CreateCharacter from './components/CreateCharacter.vue'
 import GameOver from './components/GameOver.vue'
+import InventoryModal from './components/InventoryModal.vue'
+import EquipmentModal from './components/EquipmentModal.vue'
+import PickItemModal from './components/PickItemModal.vue'
+import TargetModal from './components/TargetModal.vue'
 
 function onKey(ev: KeyboardEvent): void {
   if (store.screen !== 'game') return
   const target = ev.target as HTMLElement | null
   if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return
+  if (store.modal !== null) {
+    if (ev.key === 'Escape') {
+      store.modal = null
+      store.usingItemId = null
+      ev.preventDefault()
+    }
+    return
+  }
   const action = keyAction(ev)
   if (!action) return
   ev.preventDefault()
-  if (action.kind === 'dir') sendCommand({ type: 'move', dir: action.dir })
-  else if (action.kind === 'command') sendCommand(action.cmd)
+  switch (action.kind) {
+    case 'dir':
+      sendCommand({ type: 'move', dir: action.dir })
+      break
+    case 'command':
+      sendCommand(action.cmd)
+      break
+    case 'open':
+      store.modal = action.what
+      break
+  }
 }
 
 onMounted(() => {
@@ -39,6 +60,13 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
         <MessageLog />
       </div>
       <HudPanel />
+      <InventoryModal v-if="store.modal === 'inventory'" />
+      <EquipmentModal v-else-if="store.modal === 'equipment'" />
+      <PickItemModal v-else-if="store.modal === 'use'" mode="use" />
+      <PickItemModal v-else-if="store.modal === 'drop'" mode="drop" />
+      <PickItemModal v-else-if="store.modal === 'disassemble'" mode="disassemble" />
+      <TargetModal v-else-if="store.modal === 'bandageTarget'" mode="bandage" />
+      <TargetModal v-else-if="store.modal === 'repairTarget'" mode="repair" />
     </div>
   </div>
 </template>
