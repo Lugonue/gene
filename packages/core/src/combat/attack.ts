@@ -139,6 +139,8 @@ export function resolveAttack(ctx: Ctx, attacker: Creature, target: Creature): v
       material: part.material,
       from: fromStage,
       to: part.wound,
+      hp: part.hp,
+      maxHp: part.maxHp,
     })
   }
 

@@ -1,5 +1,5 @@
 // Структурированные события, которые возвращает core. Превращение в текст — в @gene/messages.
-import type { DamageType, Material, SkillId, SlotId, WoundStage } from '@gene/data'
+import type { DamageType, Material, RejectReasonKey, SkillId, SlotId, WoundStage } from '@gene/data'
 import type { StudyStatus } from './state'
 
 /** Ссылка на существо в событии: id и вид ('player' или id монстра). */
@@ -14,23 +14,7 @@ export type AttackRef =
 
 export type HitSeverity = 'absorbed' | 'light' | 'medium' | 'heavy'
 
-export type RejectReason =
-  | 'gameOver'
-  | 'invalid'
-  | 'blocked'
-  | 'noStairs'
-  | 'noItem'
-  | 'nothingHere'
-  | 'inventoryFull'
-  | 'cannotEquip'
-  | 'slotEmpty'
-  | 'needTarget'
-  | 'wrongTarget'
-  | 'bandageOnBionic'
-  | 'repairOnOrganic'
-  | 'notDamaged'
-  | 'notUsable'
-  | 'equippedItem'
+export type RejectReason = RejectReasonKey
 
 export type GameEvent =
   | { type: 'commandRejected'; reason: RejectReason }
@@ -65,6 +49,8 @@ export type GameEvent =
       material: Material
       from: WoundStage
       to: WoundStage
+      hp: number
+      maxHp: number
     }
   | {
       type: 'itemDamaged'

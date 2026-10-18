@@ -14,7 +14,16 @@ export function applyRegen(ctx: Ctx, c: Creature, elapsed: number): void {
     part.hp = Math.min(part.maxHp, part.hp + gain)
     part.wound = woundStageFor(part)
     if (c.kind === 'player' && stageIndex(part.wound) < stageIndex(from)) {
-      ctx.events.push({ type: 'woundChanged', creature: actorRef(c), partId: part.defId, material: part.material, from, to: part.wound })
+      ctx.events.push({
+        type: 'woundChanged',
+        creature: actorRef(c),
+        partId: part.defId,
+        material: part.material,
+        from,
+        to: part.wound,
+        hp: part.hp,
+        maxHp: part.maxHp,
+      })
     }
   }
 }

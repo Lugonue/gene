@@ -138,6 +138,26 @@ export interface ConsumableDef extends ItemDefBase {
 
 export type ItemDef = WeaponDef | ArmourDef | ConsumableDef
 
+// ---------- Отказы команд ----------
+
+export type RejectReasonKey =
+  | 'gameOver'
+  | 'invalid'
+  | 'blocked'
+  | 'noStairs'
+  | 'noItem'
+  | 'nothingHere'
+  | 'inventoryFull'
+  | 'cannotEquip'
+  | 'slotEmpty'
+  | 'needTarget'
+  | 'wrongTarget'
+  | 'bandageOnBionic'
+  | 'repairOnOrganic'
+  | 'notDamaged'
+  | 'notUsable'
+  | 'equippedItem'
+
 // ---------- Навыки ----------
 
 export type SkillId =
