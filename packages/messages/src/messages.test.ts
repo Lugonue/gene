@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import { ATTACKS, BODY_PLANS, ITEMS, MONSTERS, PLAYER_WORDS, TEMPLATES, type Material, type WoundStage } from '@gene/data'
+import {
+  ATTACKS,
+  BODY_PLANS,
+  ITEMS,
+  MONSTERS,
+  PLAYER_WORDS,
+  TEMPLATES,
+  type Material,
+  type WordForms,
+  type WoundStage,
+} from '@gene/data'
 import type { ActorRef, AttackRef, GameEvent, HitSeverity } from '@gene/core'
 import { fill, partWords, renderEvents } from './index'
 
@@ -129,9 +139,10 @@ describe('сообщения: падежи и род (контрольные п�
   const orc = { words: MONSTERS.orc_warrior!.name, person: 3 as const }
   const rat = { words: MONSTERS.rat!.name, person: 3 as const }
   const wolf = { words: MONSTERS.wolf!.name, person: 3 as const }
-  const you = { words: PLAYER_WORDS, person: 2 as const }
-  const item = (id: string, owner?: typeof you) => ({ words: ITEMS[id]!.name, person: 3 as const, ...(owner ? { owner } : {}) })
-  const part = (kind: string, id: string, owner?: typeof you) => ({
+  type Owner = { words: WordForms; person: 2 | 3 }
+  const you: Owner = { words: PLAYER_WORDS, person: 2 }
+  const item = (id: string, owner?: Owner) => ({ words: ITEMS[id]!.name, person: 3 as const, ...(owner ? { owner } : {}) })
+  const part = (kind: string, id: string, owner?: Owner) => ({
     words: partWords(kind, id),
     person: 3 as const,
     ...(owner ? { owner } : {}),
@@ -188,7 +199,7 @@ describe('сообщения: падежи и род (контрольные п�
 
   it('множественное число предметов: «Кожаные перчатки гоблина ломаются!»', () => {
     expect(
-      fill('{oitem.nom} {verb:ломаться@item}!', { roles: { item: item('leather_gloves'), oitem: item('leather_gloves', goblin as never) } }),
+      fill('{oitem.nom} {verb:ломаться@item}!', { roles: { item: item('leather_gloves'), oitem: item('leather_gloves', goblin) } }),
     ).toBe('Кожаные перчатки гоблина ломаются!')
     expect(fill('[ЯДРО] {^item.nom} {adj:разобран@item}.', { roles: { item: item('heal_potion') } })).toBe(
       '[ЯДРО] Зелье лечения разобрано.',
