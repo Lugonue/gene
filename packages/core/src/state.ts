@@ -75,7 +75,7 @@ export interface Creature {
   nextActAt: number
   /** Накопленное время для регенерации. */
   regenAcc: number
-  ai?: { mode: AiMode; lastSeen?: Pos }
+  ai?: { mode: AiMode; lastSeen?: Pos; noticed?: boolean }
 }
 
 export type ItemLocation =

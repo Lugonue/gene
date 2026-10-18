@@ -1,7 +1,14 @@
 // Создание новой партии.
-import { BODY_PLANS, CYBORG_CONFIGS, SKILL_IDS, START_WEAPONS, type SkillId } from '@gene/data'
+import { BODY_PLANS, CYBORG_CONFIGS, ITEMS, SKILL_IDS, START_KIT, START_WEAPONS, type SkillId } from '@gene/data'
 import { createRng } from './rng'
-import { fovRadius, partMaxHp } from './combat/formulas'
+import {
+  STARTING_SKILL_LEVELS,
+  STUDY_THRESHOLDS,
+  fovRadius,
+  partMaxHp,
+  xpForSkillLevel,
+} from './combat/formulas'
+import { createEquipped, createItem, giveItem } from './items'
 import type { BodyPartState, Creature, GameState } from './state'
 import { generateLevel } from './world/mapgen'
 import { populateLevel } from './world/populate'
@@ -75,6 +82,20 @@ export function createGame(seed: number, opts: NewGameOptions): GameState {
     regenAcc: 0,
   }
   state.creatures[p.id] = p
+
+  // Стартовое снаряжение: выбранное оружие (тип изучен), кожаная куртка (тип изучен частично), расходники.
+  createEquipped(state, p, opts.startWeapon)
+  for (const { item, count } of START_KIT) {
+    const def = ITEMS[item]
+    if (def?.category === 'consumable') giveItem(state, p, createItem(state, item, { kind: 'carried', owner: p.id }, count))
+    else for (let i = 0; i < count; i++) createEquipped(state, p, item)
+  }
+  const weaponDef = ITEMS[opts.startWeapon]
+  state.knowledge.itemData[opts.startWeapon] = STUDY_THRESHOLDS.known
+  state.knowledge.itemData.leather_jacket = STUDY_THRESHOLDS.partial
+  if (weaponDef?.category === 'weapon') skillXp[weaponDef.skill] = xpForSkillLevel(STARTING_SKILL_LEVELS.weapon)
+  skillXp.fighting = xpForSkillLevel(STARTING_SKILL_LEVELS.fighting)
+  skillXp.dodging = xpForSkillLevel(STARTING_SKILL_LEVELS.dodging)
 
   populateLevel(state, gen)
 

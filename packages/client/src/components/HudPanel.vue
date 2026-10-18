@@ -48,6 +48,9 @@ const hpColor = computed(() => (hpPct.value > 60 ? '#5fd068' : hpPct.value > 30 
     <div v-for="m in view.monsters" :key="m.id" class="mon">
       <span :style="{ color: m.color }">{{ m.glyph }}</span> {{ m.name }}
       <span v-if="m.fleeing" class="dim">(отступает)</span>
+      <div v-for="part in m.parts.filter((p) => p.wound !== 'none')" :key="part.id" class="mpart">
+        {{ part.name }}: <span :style="{ color: WOUND_COLORS[part.wound] }">{{ part.label }}</span>
+      </div>
     </div>
 
     <div class="hint dim">? — подсказка по клавишам</div>
@@ -119,5 +122,10 @@ const hpColor = computed(() => (hpPct.value > 60 ? '#5fd068' : hpPct.value > 30 
 }
 .hint {
   margin-top: 14px;
+}
+.mpart {
+  padding-left: 18px;
+  font-size: 12px;
+  color: #8fa5ab;
 }
 </style>

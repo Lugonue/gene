@@ -37,6 +37,9 @@ export const ATTACKS: Record<string, NaturalAttackDef> = {
   },
 }
 
+/** Сколько монстров (групп считаются по особям) ставится на уровень. */
+export const MONSTERS_PER_LEVEL: [number, number] = [6, 12]
+
 export const MONSTERS: Record<string, MonsterDef> = {
   rat: {
     id: 'rat',

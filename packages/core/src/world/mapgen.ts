@@ -18,13 +18,19 @@ export interface GeneratedLevel {
 export function generateLevel(rng: RngState, depth: number): GeneratedLevel {
   const width = MAP_WIDTH
   const height = MAP_HEIGHT
-  const tiles: string[] = new Array(width * height).fill(TILE.wall)
-
-  ROT.RNG.setSeed(deriveSeed(rng))
-  const digger = new ROT.Map.Digger(width, height, { dugPercentage: 0.3, roomWidth: [4, 11], roomHeight: [3, 7] })
-  digger.create((x, y, wall) => {
-    if (!wall) tiles[y * width + x] = TILE.floor
-  })
+  let tiles: string[] = []
+  let digger: InstanceType<typeof ROT.Map.Digger> | undefined
+  // Нужны хотя бы 2 комнаты: лестницы вверх и вниз (портал) не должны совпадать.
+  for (let attempt = 0; attempt < 50; attempt++) {
+    tiles = new Array(width * height).fill(TILE.wall)
+    ROT.RNG.setSeed(deriveSeed(rng))
+    digger = new ROT.Map.Digger(width, height, { dugPercentage: 0.3, roomWidth: [4, 11], roomHeight: [3, 7] })
+    digger.create((x, y, wall) => {
+      if (!wall) tiles[y * width + x] = TILE.floor
+    })
+    if (digger.getRooms().length >= 2) break
+  }
+  if (!digger) throw new Error('mapgen: генерация не удалась')
 
   const rooms = digger.getRooms()
   const roomCells: Pos[][] = rooms.map((room) => {
