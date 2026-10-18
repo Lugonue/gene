@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { applyCommand, createGame, type Command, type ServerMsg } from '@gene/core'
+import { applyCommand, createGame, type Command, type GameState, type ServerMsg } from '@gene/core'
 import { GameService, type Conn } from './service'
 import { openStore, type Store } from './store'
 
@@ -128,6 +128,44 @@ describe('GameService', () => {
     expect(store.activeGame('tok')!.snapshot.turn).toBe(1)
     await new Promise((r) => setTimeout(r, 50))
     expect(service.loadedCount).toBe(0)
+  })
+
+  it('смерть: gameOver с итогами, старая партия не принимает команд, можно начать новую', () => {
+    const store = memStore()
+    const service = new GameService(store, { makeSeed: () => SEED, makeToken: () => 'tok' })
+    const c = new FakeConn()
+    service.handle(c, { type: 'hello' })
+    service.handle(c, NEW_GAME)
+    // Доступ к приватному полю: подводим игрока к смерти.
+    const state = (service as unknown as { games: Map<string, { state: GameState }> }).games.get('tok')!.state
+    const p = state.creatures.p!
+    p.hp = 1
+    for (const id of Object.keys(state.creatures)) if (id !== 'p') delete state.creatures[id]
+    state.creatures.boss = {
+      id: 'boss',
+      kind: 'orc_warrior',
+      depth: 1,
+      x: p.x + 1,
+      y: p.y,
+      hp: 999,
+      maxHp: 999,
+      bodyPlan: 'humanoid',
+      parts: p.parts.map((x) => ({ defId: x.defId, material: 'organic', hp: 99, maxHp: 99, wound: 'none' })),
+      equipment: {},
+      inventory: [],
+      nextActAt: 0,
+      regenAcc: 0,
+      ai: { mode: 'hunt' },
+    }
+    let seq = 1
+    while (!c.msgs.some((m) => m.type === 'gameOver') && seq < 300) send(service, c, seq++, { type: 'wait' })
+    const over = c.last('gameOver')
+    expect(over.summary).toMatchObject({ status: 'dead', name: 'Тест', killedBy: 'орк-воин', depth: 1 })
+    expect(over.summary.lastMessages.length).toBeGreaterThan(0)
+    expect(store.activeGame('tok')).toBeUndefined()
+    expect(send(service, c, seq++, { type: 'wait' })).toMatchObject({ type: 'error' })
+    service.handle(c, NEW_GAME)
+    expect(c.last('view')).toMatchObject({ fresh: true, view: { turn: 0, status: 'active' } })
   })
 
   it('вторая партия при активной не создаётся', () => {

@@ -12,6 +12,7 @@ import InventoryModal from './components/InventoryModal.vue'
 import EquipmentModal from './components/EquipmentModal.vue'
 import PickItemModal from './components/PickItemModal.vue'
 import TargetModal from './components/TargetModal.vue'
+import SkillsModal from './components/SkillsModal.vue'
 
 function onKey(ev: KeyboardEvent): void {
   if (store.screen !== 'game') return
@@ -67,6 +68,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
       <PickItemModal v-else-if="store.modal === 'disassemble'" mode="disassemble" />
       <TargetModal v-else-if="store.modal === 'bandageTarget'" mode="bandage" />
       <TargetModal v-else-if="store.modal === 'repairTarget'" mode="repair" />
+      <SkillsModal v-else-if="store.modal === 'skills'" />
     </div>
   </div>
 </template>
