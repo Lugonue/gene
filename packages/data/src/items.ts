@@ -1,0 +1,210 @@
+import type { ItemDef } from './types'
+import { w } from './words'
+
+const WEAPON_COLOR = '#c9d1d9'
+const ARMOUR_COLOR = '#8fb3d9'
+
+export const ITEMS: Record<string, ItemDef> = {
+  // ----- Оружие -----
+  dagger: {
+    id: 'dagger',
+    category: 'weapon',
+    name: w(['кинжал', 'кинжала', 'кинжалу', 'кинжал', 'кинжалом', 'кинжале'], 'm'),
+    glyph: ')',
+    color: WEAPON_COLOR,
+    damage: 4,
+    accuracy: 4,
+    damageType: 'pierce',
+    skill: 'short_blades',
+    maxDurability: 40,
+  },
+  short_sword: {
+    id: 'short_sword',
+    category: 'weapon',
+    name: w(['короткий меч', 'короткого меча', 'короткому мечу', 'короткий меч', 'коротким мечом', 'коротком мече'], 'm'),
+    glyph: ')',
+    color: WEAPON_COLOR,
+    damage: 6,
+    accuracy: 2,
+    damageType: 'slash',
+    skill: 'long_blades',
+    maxDurability: 50,
+  },
+  mace: {
+    id: 'mace',
+    category: 'weapon',
+    name: w(['булава', 'булавы', 'булаве', 'булаву', 'булавой', 'булаве'], 'f'),
+    glyph: ')',
+    color: WEAPON_COLOR,
+    damage: 7,
+    accuracy: 0,
+    damageType: 'blunt',
+    skill: 'maces',
+    maxDurability: 60,
+  },
+  axe: {
+    id: 'axe',
+    category: 'weapon',
+    name: w(['топор', 'топора', 'топору', 'топор', 'топором', 'топоре'], 'm'),
+    glyph: ')',
+    color: WEAPON_COLOR,
+    damage: 8,
+    accuracy: -1,
+    damageType: 'slash',
+    skill: 'axes',
+    maxDurability: 50,
+  },
+
+  // ----- Броня -----
+  helmet: {
+    id: 'helmet',
+    category: 'armour',
+    name: w(['шлем', 'шлема', 'шлему', 'шлем', 'шлемом', 'шлеме'], 'm'),
+    glyph: '[',
+    color: ARMOUR_COLOR,
+    kind: 'head',
+    absorb: 2,
+    skill: 'heavy_armour',
+    maxDurability: 40,
+  },
+  leather_jacket: {
+    id: 'leather_jacket',
+    category: 'armour',
+    name: w(
+      ['кожаная куртка', 'кожаной куртки', 'кожаной куртке', 'кожаную куртку', 'кожаной курткой', 'кожаной куртке'],
+      'f',
+    ),
+    glyph: '[',
+    color: ARMOUR_COLOR,
+    kind: 'body',
+    absorb: 2,
+    skill: 'light_armour',
+    maxDurability: 40,
+  },
+  chainmail: {
+    id: 'chainmail',
+    category: 'armour',
+    name: w(['кольчуга', 'кольчуги', 'кольчуге', 'кольчугу', 'кольчугой', 'кольчуге'], 'f'),
+    glyph: '[',
+    color: ARMOUR_COLOR,
+    kind: 'body',
+    absorb: 4,
+    skill: 'heavy_armour',
+    maxDurability: 60,
+  },
+  leather_gloves: {
+    id: 'leather_gloves',
+    category: 'armour',
+    name: w(
+      [
+        'кожаные перчатки',
+        'кожаных перчаток',
+        'кожаным перчаткам',
+        'кожаные перчатки',
+        'кожаными перчатками',
+        'кожаных перчатках',
+      ],
+      'pl',
+    ),
+    glyph: '[',
+    color: ARMOUR_COLOR,
+    kind: 'hands',
+    absorb: 1,
+    skill: 'light_armour',
+    maxDurability: 30,
+  },
+  bracers: {
+    id: 'bracers',
+    category: 'armour',
+    name: w(['наручи', 'наручей', 'наручам', 'наручи', 'наручами', 'наручах'], 'pl'),
+    glyph: '[',
+    color: ARMOUR_COLOR,
+    kind: 'hands',
+    absorb: 2,
+    skill: 'heavy_armour',
+    maxDurability: 40,
+  },
+  leather_boots: {
+    id: 'leather_boots',
+    category: 'armour',
+    name: w(
+      ['кожаные сапоги', 'кожаных сапог', 'кожаным сапогам', 'кожаные сапоги', 'кожаными сапогами', 'кожаных сапогах'],
+      'pl',
+    ),
+    glyph: '[',
+    color: ARMOUR_COLOR,
+    kind: 'legs',
+    absorb: 1,
+    skill: 'light_armour',
+    maxDurability: 30,
+  },
+  greaves: {
+    id: 'greaves',
+    category: 'armour',
+    name: w(['поножи', 'поножей', 'поножам', 'поножи', 'поножами', 'поножах'], 'pl'),
+    glyph: '[',
+    color: ARMOUR_COLOR,
+    kind: 'legs',
+    absorb: 2,
+    skill: 'heavy_armour',
+    maxDurability: 40,
+  },
+
+  // ----- Расходники -----
+  bandage: {
+    id: 'bandage',
+    category: 'consumable',
+    name: w(['бинт', 'бинта', 'бинту', 'бинт', 'бинтом', 'бинте'], 'm'),
+    glyph: '?',
+    color: '#f0f0f0',
+    effect: 'bandage',
+  },
+  heal_potion: {
+    id: 'heal_potion',
+    category: 'consumable',
+    name: w(
+      ['зелье лечения', 'зелья лечения', 'зелью лечения', 'зелье лечения', 'зельем лечения', 'зелье лечения'],
+      'n',
+    ),
+    glyph: '!',
+    color: '#e05d6f',
+    effect: 'healPotion',
+  },
+  repair_kit: {
+    id: 'repair_kit',
+    category: 'consumable',
+    name: w(['ремкомплект', 'ремкомплекта', 'ремкомплекту', 'ремкомплект', 'ремкомплектом', 'ремкомплекте'], 'm'),
+    glyph: '?',
+    color: '#4fd1e8',
+    effect: 'repairKit',
+  },
+}
+
+/** Веса появления предметов на полу уровня. */
+export const FLOOR_ITEM_WEIGHTS: Record<string, number> = {
+  dagger: 3,
+  short_sword: 3,
+  mace: 3,
+  axe: 2,
+  helmet: 3,
+  leather_jacket: 2,
+  chainmail: 2,
+  leather_gloves: 3,
+  bracers: 2,
+  leather_boots: 3,
+  greaves: 2,
+  bandage: 6,
+  heal_potion: 4,
+  repair_kit: 5,
+}
+
+export const FLOOR_ITEMS_PER_LEVEL: [number, number] = [5, 8]
+
+export const START_WEAPONS = ['dagger', 'short_sword', 'mace'] as const
+
+export const START_KIT: { item: string; count: number }[] = [
+  { item: 'leather_jacket', count: 1 },
+  { item: 'bandage', count: 2 },
+  { item: 'heal_potion', count: 1 },
+  { item: 'repair_kit', count: 2 },
+]
