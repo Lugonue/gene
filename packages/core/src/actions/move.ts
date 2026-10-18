@@ -9,8 +9,8 @@ import { playerAttack } from './attack'
 export function moveAction(ctx: Ctx, dir: Dir): ActionResult {
   const { state } = ctx
   const p = player(state)
+  if (typeof dir !== 'string' || !Object.hasOwn(DIRS, dir)) return reject('invalid')
   const d = DIRS[dir]
-  if (!d) return reject('invalid')
   const level = state.levels[p.depth]!
   const nx = p.x + d.x
   const ny = p.y + d.y

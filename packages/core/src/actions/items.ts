@@ -80,7 +80,7 @@ export function equipAction(ctx: Ctx, itemId: string, slot?: SlotId): ActionResu
 
 export function unequipAction(ctx: Ctx, slot: SlotId): ActionResult {
   const p = player(ctx.state)
-  if (!(slot in SLOTS)) return reject('invalid')
+  if (typeof slot !== 'string' || !Object.hasOwn(SLOTS, slot)) return reject('invalid')
   const id = p.equipment[slot]
   const inst = id ? ctx.state.items[id] : undefined
   if (!inst) return reject('slotEmpty')

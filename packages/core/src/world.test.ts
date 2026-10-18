@@ -76,6 +76,34 @@ describe('движение', () => {
   })
 })
 
+describe('валидация команд', () => {
+  it('некорректные и враждебные команды отклоняются, состояние не меняется', () => {
+    const s = newTestGame(77)
+    const bad = [
+      { type: 'move', dir: '__proto__' },
+      { type: 'move', dir: 'toString' },
+      { type: 'move', dir: 42 },
+      { type: 'move' },
+      { type: 'unequip', slot: '__proto__' },
+      { type: 'unequip', slot: 'constructor' },
+      { type: 'equip', itemId: '__proto__', slot: 'weapon' },
+      { type: 'use', itemId: { x: 1 } },
+      { type: 'drop', itemId: 'nope' },
+      { type: 'disassemble' },
+      { type: 'teleport' },
+      null,
+      'move',
+    ] as unknown as Command[]
+    const before = JSON.stringify(s)
+    for (const cmd of bad) {
+      const r = applyCommand(s, cmd)
+      expect(r.state).toBe(s)
+      expect(r.events[0]).toMatchObject({ type: 'commandRejected' })
+    }
+    expect(JSON.stringify(s)).toBe(before)
+  })
+})
+
 describe('уровни', () => {
   it('спуск на 3 уровня, подъём обратно и вход в портал', () => {
     let s = newTestGame(2024)

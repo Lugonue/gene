@@ -39,6 +39,7 @@ describe('создание персонажа', () => {
   it('валидация параметров', () => {
     expect(validateNewGame({ name: '', bodyPlan: 'humanoid', startWeapon: 'dagger' })).not.toBeNull()
     expect(validateNewGame({ name: 'X', bodyPlan: 'tentacles', startWeapon: 'dagger' })).not.toBeNull()
+    expect(validateNewGame({ name: 'X', bodyPlan: '__proto__', startWeapon: 'dagger' })).not.toBeNull()
     expect(validateNewGame({ name: 'X', bodyPlan: 'humanoid', startWeapon: 'axe' })).not.toBeNull()
     expect(validateNewGame({ name: 'X', bodyPlan: 'humanoid', startWeapon: 'dagger' })).toBeNull()
   })

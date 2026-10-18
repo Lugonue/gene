@@ -13,6 +13,17 @@ import EquipmentModal from './components/EquipmentModal.vue'
 import PickItemModal from './components/PickItemModal.vue'
 import TargetModal from './components/TargetModal.vue'
 import SkillsModal from './components/SkillsModal.vue'
+import HelpModal from './components/HelpModal.vue'
+import InspectPanel from './components/InspectPanel.vue'
+import { DIR_DELTAS as DIRS } from './input'
+
+function onHover(pos: { x: number; y: number } | null): void {
+  if (!store.lookMode) store.inspect = pos
+}
+
+function onPick(pos: { x: number; y: number }): void {
+  store.inspect = pos
+}
 
 function onKey(ev: KeyboardEvent): void {
   if (store.screen !== 'game') return
@@ -29,9 +40,31 @@ function onKey(ev: KeyboardEvent): void {
   const action = keyAction(ev)
   if (!action) return
   ev.preventDefault()
+
+  // Режим осмотра: направления двигают курсор, x/Esc — выход.
+  if (store.lookMode) {
+    if (action.kind === 'dir' && store.inspect && store.view) {
+      const d = DIRS[action.dir]
+      store.inspect = {
+        x: Math.min(store.view.map.width - 1, Math.max(0, store.inspect.x + d.x)),
+        y: Math.min(store.view.map.height - 1, Math.max(0, store.inspect.y + d.y)),
+      }
+    } else if (action.kind === 'look' || action.kind === 'escape') {
+      store.lookMode = false
+      store.inspect = null
+    }
+    return
+  }
+
   switch (action.kind) {
     case 'dir':
       sendCommand({ type: 'move', dir: action.dir })
+      break
+    case 'look':
+      if (store.view) {
+        store.lookMode = true
+        store.inspect = { x: store.view.player.x, y: store.view.player.y }
+      }
       break
     case 'command':
       sendCommand(action.cmd)
@@ -57,7 +90,8 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
     <GameOver v-else-if="store.screen === 'over'" />
     <div v-else-if="store.screen === 'game' && store.view" class="game">
       <div class="main">
-        <div class="map-wrap"><MapCanvas /></div>
+        <div class="map-wrap"><MapCanvas @hover="onHover" @pick="onPick" /></div>
+        <InspectPanel />
         <MessageLog />
       </div>
       <HudPanel />
@@ -69,6 +103,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
       <TargetModal v-else-if="store.modal === 'bandageTarget'" mode="bandage" />
       <TargetModal v-else-if="store.modal === 'repairTarget'" mode="repair" />
       <SkillsModal v-else-if="store.modal === 'skills'" />
+      <HelpModal v-else-if="store.modal === 'help'" />
     </div>
   </div>
 </template>

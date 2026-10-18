@@ -23,7 +23,8 @@ export interface NewGameOptions {
 export function validateNewGame(opts: NewGameOptions): string | null {
   if (typeof opts.name !== 'string' || opts.name.trim().length === 0 || opts.name.length > 24)
     return 'Обозначение: от 1 до 24 символов'
-  if (!CYBORG_CONFIGS[opts.bodyPlan]) return 'Неизвестная конфигурация тела'
+  if (typeof opts.bodyPlan !== 'string' || !Object.hasOwn(CYBORG_CONFIGS, opts.bodyPlan))
+    return 'Неизвестная конфигурация тела'
   if (!(START_WEAPONS as readonly string[]).includes(opts.startWeapon)) return 'Недопустимое стартовое оружие'
   return null
 }

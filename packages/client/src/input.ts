@@ -1,6 +1,18 @@
 // Клавиатура → команды и окна. Движение: стрелки, numpad, vi-клавиши.
 import type { Command, Dir } from '@gene/core'
 
+/** Смещения направлений (для курсора осмотра; игровое движение считает сервер). */
+export const DIR_DELTAS: Record<Dir, { x: number; y: number }> = {
+  n: { x: 0, y: -1 },
+  s: { x: 0, y: 1 },
+  e: { x: 1, y: 0 },
+  w: { x: -1, y: 0 },
+  ne: { x: 1, y: -1 },
+  nw: { x: -1, y: -1 },
+  se: { x: 1, y: 1 },
+  sw: { x: -1, y: 1 },
+}
+
 const KEY_DIRS: Record<string, Dir> = {
   ArrowUp: 'n',
   ArrowDown: 's',
