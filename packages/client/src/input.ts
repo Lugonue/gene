@@ -74,7 +74,7 @@ export function keyAction(ev: KeyboardEvent): KeyAction | undefined {
   if (ev.key in RUN_LETTERS) return { kind: 'run', dir: RUN_LETTERS[ev.key]! }
   const dir = directionFor(ev)
   if (dir) return ev.shiftKey ? { kind: 'run', dir } : { kind: 'dir', dir }
-  if (ev.code === 'Numpad5' || ev.key === '.' || ev.key === '5' || ev.key === 'Clear') return { kind: 'command', cmd: { type: 'wait' } }
+  if (ev.code === 'Numpad5' || ev.key === '.' || ev.key === '5' || ev.key === 's' || ev.key === 'Clear') return { kind: 'command', cmd: { type: 'wait' } }
   switch (ev.key) {
     case '>':
       return { kind: 'command', cmd: { type: 'stairsDown' } }
