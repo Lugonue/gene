@@ -1,6 +1,6 @@
 # gene — браузерный ASCII-рогалик (MVP)
 
-Спецификация: `TZ.md`. Журнал решений: `DECISIONS.md`. Запуск и тесты: `README.md`.
+Спецификация: `TZ.md`. Журнал решений: `DECISIONS.md`. Лор: `docs/lore.md`. Запуск и тесты: `README.md`.
 
 ## Agent skills
 
