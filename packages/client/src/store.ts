@@ -7,6 +7,8 @@ export type Screen = 'connecting' | 'create' | 'game' | 'over'
 export interface LogEntry extends LogMessage {
   id: number
   fresh: boolean
+  /** Сколько раз подряд пришло это сообщение. */
+  count: number
 }
 
 export type ModalName =
@@ -57,7 +59,17 @@ export const LOG_LIMIT = 100
 export function pushLog(messages: LogMessage[], replace = false): void {
   for (const e of store.log) e.fresh = false
   if (replace) store.log = []
-  for (const m of messages) store.log.push({ ...m, id: nextLogId++, fresh: !replace })
+  for (const m of messages) {
+    // Повтор предыдущего сообщения не дублируется, а увеличивает счётчик «×N».
+    const last = store.log[store.log.length - 1]
+    if (last && last.text === m.text && last.kind === m.kind) {
+      last.count++
+      last.turn = m.turn
+      last.fresh = !replace
+      continue
+    }
+    store.log.push({ ...m, id: nextLogId++, fresh: !replace, count: 1 })
+  }
   if (store.log.length > LOG_LIMIT) store.log.splice(0, store.log.length - LOG_LIMIT)
 }
 
