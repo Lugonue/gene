@@ -222,3 +222,23 @@ describe('сообщения: падежи и род (контрольные п�
     expect(out[0]).toMatchObject({ kind: 'system', text: '[ЯДРО] Новый тип оружия: булава. Анализ начат.' })
   })
 })
+
+describe('сообщения автоисследования и бега', () => {
+  it('замеченные объекты и окончание — голосом ядра', () => {
+    const events: GameEvent[] = [
+      { type: 'itemsNoticed', itemDefIds: ['bandage', 'bandage', 'short_sword'] },
+      { type: 'featureNoticed', feature: 'stairsDown' },
+      { type: 'featureNoticed', feature: 'stairsUp' },
+      { type: 'featureNoticed', feature: 'portal' },
+      { type: 'exploreFinished' },
+      { type: 'autoLimitReached' },
+    ]
+    const out = renderEvents(events, 'p')
+    expect(out).toHaveLength(events.length)
+    for (const m of out) {
+      expect(m.kind).toBe('system')
+      expect(m.text).toMatch(/^\[ЯДРО\] /)
+    }
+    expect(out[0]!.text).toContain('(×2)')
+  })
+})

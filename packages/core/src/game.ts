@@ -2,11 +2,14 @@
 // Вход не мутируется: работаем с глубокой копией. Результат детерминирован (весь рандом — из state.rng).
 import { reject, type ActionResult, type Ctx } from './context'
 import type { GameEvent } from './events'
-import { player, type Command, type GameState } from './state'
+import { DIRS, creatureAt, player, tileAt, type Command, type Dir, type GameState } from './state'
 import { actionCost, nextActor, spendTime } from './time'
 import { monsterTurn } from './ai'
 import { moveAction, stairsAction } from './actions/move'
-import { computeFov, rememberVisible } from './world/fov'
+import { computeFov, isPassable, rememberVisible } from './world/fov'
+import { exploreStep } from './world/explore'
+import { noticeObjects } from './world/notice'
+import type { MoveFrame } from './protocol'
 import { fovRadius, organicHealCap } from './combat/formulas'
 import { applyRegen } from './health'
 import { actorRef } from './combat/attack'
@@ -23,12 +26,16 @@ import {
 export interface CommandResult {
   state: GameState
   events: GameEvent[]
+  /** Кадры перемещения для анимации (автоисследование, бег). */
+  frames?: MoveFrame[]
 }
 
 /** Защита от бесконечного цикла мира (если вдруг что-то не тратит время). */
 const MAX_WORLD_STEPS = 10_000
 /** Максимум ходов отдыха за одну команду rest. */
 const MAX_REST_TURNS = 200
+/** Максимум шагов автоисследования и бега за одну команду. */
+const MAX_AUTO_STEPS = 500
 
 export function applyCommand(prev: GameState, cmd: Command): CommandResult {
   if (prev.status !== 'active') return { state: prev, events: [{ type: 'commandRejected', reason: 'gameOver' }] }
@@ -38,10 +45,11 @@ export function applyCommand(prev: GameState, cmd: Command): CommandResult {
   const state = structuredClone(prev)
   const ctx: Ctx = { state, events: [] }
 
-  if (cmd.type === 'rest') {
-    const res = rest(ctx)
+  const multi = MULTI_TURN[cmd.type]
+  if (multi) {
+    const res = multi(ctx, cmd)
     if (!res.ok) return { state: prev, events: [{ type: 'commandRejected', reason: res.reason }] }
-    return { state, events: ctx.events }
+    return { state, events: ctx.events, ...(ctx.frames && ctx.frames.length > 0 ? { frames: ctx.frames } : {}) }
   }
 
   const res = performPlayerAction(ctx, cmd)
@@ -108,13 +116,14 @@ function runWorld(ctx: Ctx): void {
   }
 }
 
-/** Обновить память карты и отметить монстров, впервые попавших в поле зрения. */
+/** Обновить память карты и отметить монстров и объекты, впервые попавшие в поле зрения. */
 function observe(ctx: Ctx): void {
   const { state } = ctx
   const p = player(state)
   const level = state.levels[p.depth]
   if (!level) return
   const visible = computeFov(level, p.x, p.y, fovRadius(p))
+  const noticed = noticeObjects(state, visible)
   rememberVisible(level, visible)
   for (const c of Object.values(state.creatures)) {
     if (c.kind === 'player' || c.depth !== p.depth || !c.ai) continue
@@ -122,6 +131,8 @@ function observe(ctx: Ctx): void {
     if (seen && !c.ai.noticed) ctx.events.push({ type: 'monsterNoticed', creature: actorRef(c) })
     c.ai.noticed = seen
   }
+  for (const feature of noticed.features) ctx.events.push({ type: 'featureNoticed', feature })
+  if (noticed.itemDefIds.length > 0) ctx.events.push({ type: 'itemsNoticed', itemDefIds: noticed.itemDefIds })
 }
 
 function monstersInView(ctx: Ctx): boolean {
@@ -140,20 +151,137 @@ function needsRest(ctx: Ctx): boolean {
   return p.parts.some((part) => part.material === 'organic' && part.hp < organicHealCap(part))
 }
 
-/** Отдых: ждать, пока не восстановится здоровье (органика) или не появится монстр. */
+// ---------------------------------------------------------------------------
+// Многоходовые действия: отдых, автоисследование, бег. Общие условия остановки.
+// ---------------------------------------------------------------------------
+
+type MultiTurnAction = (ctx: Ctx, cmd: Command) => ActionResult
+
+const MULTI_TURN: Partial<Record<Command['type'], MultiTurnAction>> = {
+  rest: (ctx) => rest(ctx),
+  explore: (ctx) => explore(ctx),
+  run: (ctx, cmd) => runStraight(ctx, (cmd as Extract<Command, { type: 'run' }>).dir),
+}
+
+/** Чем закончился цикл: none — не сделано ни шага; finished — делать больше нечего; stopped — условие остановки. */
+type AutoEnd = 'none' | 'finished' | 'stopped' | 'limit'
+
+/** Условие остановки многоходового действия. */
+function isStopEvent(e: GameEvent, playerId: string): boolean {
+  switch (e.type) {
+    case 'monsterNoticed':
+    case 'itemsNoticed':
+    case 'featureNoticed':
+    case 'doorOpened':
+    case 'levelChanged':
+      return true
+    case 'attackHit':
+    case 'attackMissed':
+      return e.target.id === playerId
+    case 'woundChanged':
+      return e.creature.id === playerId
+    default:
+      return false
+  }
+}
+
+/**
+ * Повторять шаг, пока он возможен и не сработало условие остановки. step возвращает undefined,
+ * когда делать больше нечего; отказ на первом шаге отклоняет всю команду.
+ * Сообщения «здесь лежит» на промежуточных шагах убираются.
+ */
+function autoLoop(
+  ctx: Ctx,
+  maxSteps: number,
+  step: () => ActionResult | undefined,
+  trackFrames = false,
+): AutoEnd | ActionResult {
+  const { state } = ctx
+  const p = player(state)
+  for (let i = 0; i < maxSteps; i++) {
+    const from = ctx.events.length
+    const memBefore = trackFrames ? state.levels[p.depth]!.memory : ''
+    const res = step()
+    if (!res) return i === 0 ? 'none' : 'finished'
+    if (!res.ok) return i === 0 ? res : 'finished'
+    playerTurn(ctx, res.cost)
+    if (trackFrames) pushFrame(ctx, memBefore)
+    const stepEvents = ctx.events.slice(from)
+    if (state.status !== 'active' || stepEvents.some((e) => isStopEvent(e, p.id)) || monstersInView(ctx))
+      return 'stopped'
+    if (i < maxSteps - 1)
+      ctx.events.splice(from, stepEvents.length, ...stepEvents.filter((e) => e.type !== 'itemsHere'))
+  }
+  return 'limit'
+}
+
+function pushFrame(ctx: Ctx, memBefore: string): void {
+  const p = player(ctx.state)
+  const mem = ctx.state.levels[p.depth]!.memory
+  const cells: number[] = []
+  let tiles = ''
+  for (let i = 0; i < mem.length; i++) {
+    if (mem[i] === memBefore[i]) continue
+    cells.push(i)
+    tiles += mem[i]
+  }
+  ;(ctx.frames ??= []).push({ x: p.x, y: p.y, cells, tiles })
+}
+
+/** Отдых: ждать, пока не восстановится здоровье (органика) или не сработает условие остановки. */
 function rest(ctx: Ctx): ActionResult {
   if (monstersInView(ctx)) return reject('blocked')
   if (!needsRest(ctx)) return reject('notDamaged')
   const p = player(ctx.state)
-  for (let i = 0; i < MAX_REST_TURNS; i++) {
-    playerTurn(ctx, actionCost(p, 'wait'))
-    if (ctx.state.status !== 'active') break
-    if (monstersInView(ctx)) {
-      ctx.events.push({ type: 'restInterrupted' })
-      return { ok: true, cost: 0 }
-    }
-    if (!needsRest(ctx)) break
-  }
-  ctx.events.push({ type: 'restFinished' })
+  const end = autoLoop(ctx, MAX_REST_TURNS, () =>
+    needsRest(ctx) ? { ok: true, cost: actionCost(p, 'wait') } : undefined,
+  )
+  if (typeof end !== 'string') return end
+  const interrupted = end === 'stopped' && ctx.state.status === 'active'
+  ctx.events.push({ type: interrupted ? 'restInterrupted' : 'restFinished' })
+  return { ok: true, cost: 0 }
+}
+
+/** Автоисследование: идти к ближайшей неизвестной клетке по памяти карты. */
+function explore(ctx: Ctx): ActionResult {
+  if (monstersInView(ctx)) return reject('blocked')
+  const p = player(ctx.state)
+  const end = autoLoop(
+    ctx,
+    MAX_AUTO_STEPS,
+    () => {
+      const dir = exploreStep(ctx.state.levels[p.depth]!, p)
+      return dir ? moveAction(ctx, dir) : undefined
+    },
+    true,
+  )
+  if (typeof end !== 'string') return end
+  if (end === 'none') return reject('nothingToExplore')
+  if (end === 'finished') ctx.events.push({ type: 'exploreFinished' })
+  if (end === 'limit') ctx.events.push({ type: 'autoLimitReached' })
+  return { ok: true, cost: 0 }
+}
+
+/** Бег: идти по прямой, пока впереди свободная проходимая клетка и не сработало условие остановки. */
+function runStraight(ctx: Ctx, dir: Dir): ActionResult {
+  if (typeof dir !== 'string' || !Object.hasOwn(DIRS, dir)) return reject('invalid')
+  if (monstersInView(ctx)) return reject('blocked')
+  const { state } = ctx
+  const p = player(state)
+  const d = DIRS[dir]
+  const end = autoLoop(
+    ctx,
+    MAX_AUTO_STEPS,
+    () => {
+      const nx = p.x + d.x
+      const ny = p.y + d.y
+      if (!isPassable(tileAt(state.levels[p.depth]!, nx, ny)) || creatureAt(state, p.depth, nx, ny)) return undefined
+      return moveAction(ctx, dir)
+    },
+    true,
+  )
+  if (typeof end !== 'string') return end
+  if (end === 'none') return reject('blocked')
+  if (end === 'limit') ctx.events.push({ type: 'autoLimitReached' })
   return { ok: true, cost: 0 }
 }

@@ -122,6 +122,8 @@ export interface GameState {
   playerId: string
   nextId: number
   knowledge: Knowledge
+  /** Замеченные предметы (id): попадали в поле зрения игрока. Нет в старых сохранениях. */
+  noticedItems?: Record<string, true>
   /** Причина смерти (id типа монстра), для итогов. */
   killedBy?: string
   maxDepthReached: number
@@ -144,6 +146,8 @@ export type Command =
   | { type: 'move'; dir: Dir }
   | { type: 'wait' }
   | { type: 'rest' }
+  | { type: 'explore' }
+  | { type: 'run'; dir: Dir }
   | { type: 'pickup' }
   | { type: 'drop'; itemId: string }
   | { type: 'equip'; itemId: string; slot?: SlotId }

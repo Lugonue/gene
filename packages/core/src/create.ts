@@ -13,6 +13,7 @@ import type { BodyPartState, Creature, GameState } from './state'
 import { generateLevel } from './world/mapgen'
 import { populateLevel } from './world/populate'
 import { computeFov, rememberVisible } from './world/fov'
+import { noticeObjects } from './world/notice'
 
 export interface NewGameOptions {
   name: string
@@ -101,6 +102,8 @@ export function createGame(seed: number, opts: NewGameOptions): GameState {
   populateLevel(state, gen)
 
   const level = state.levels[1]!
-  rememberVisible(level, computeFov(level, p.x, p.y, fovRadius(p)))
+  const visible = computeFov(level, p.x, p.y, fovRadius(p))
+  noticeObjects(state, visible)
+  rememberVisible(level, visible)
   return state
 }

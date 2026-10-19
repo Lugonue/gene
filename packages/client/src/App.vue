@@ -2,6 +2,7 @@
 import { onBeforeUnmount, onMounted } from 'vue'
 import { store } from './store'
 import { connect, sendCommand } from './net'
+import { skipAnimation } from './anim'
 import { keyAction } from './input'
 import MapCanvas from './components/MapCanvas.vue'
 import HudPanel from './components/HudPanel.vue'
@@ -25,10 +26,18 @@ function onPick(pos: { x: number; y: number }): void {
   store.inspect = pos
 }
 
+const MODIFIER_KEYS = new Set(['Shift', 'Control', 'Alt', 'Meta'])
+
 function onKey(ev: KeyboardEvent): void {
   if (store.screen !== 'game') return
   const target = ev.target as HTMLElement | null
   if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return
+  // Любая клавиша во время анимации доматывает её; сама клавиша не выполняется.
+  if (store.anim) {
+    if (!ev.repeat && !MODIFIER_KEYS.has(ev.key)) skipAnimation()
+    ev.preventDefault()
+    return
+  }
   if (store.modal !== null) {
     if (ev.key === 'Escape') {
       store.modal = null
@@ -59,6 +68,9 @@ function onKey(ev: KeyboardEvent): void {
   switch (action.kind) {
     case 'dir':
       sendCommand({ type: 'move', dir: action.dir })
+      break
+    case 'run':
+      sendCommand({ type: 'run', dir: action.dir })
       break
     case 'look':
       if (store.view) {

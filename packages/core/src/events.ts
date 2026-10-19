@@ -1,6 +1,7 @@
 // Структурированные события, которые возвращает core. Превращение в текст — в @gene/messages.
 import type { DamageType, Material, RejectReasonKey, SkillId, SlotId, WoundStage } from '@gene/data'
 import type { StudyStatus } from './state'
+import type { FeatureKind } from './world/notice'
 
 /** Ссылка на существо в событии: id и вид ('player' или id монстра). */
 export interface ActorRef {
@@ -84,4 +85,8 @@ export type GameEvent =
   | { type: 'studyChanged'; itemDefId: string; status: StudyStatus }
   | { type: 'restInterrupted' }
   | { type: 'restFinished' }
+  | { type: 'itemsNoticed'; itemDefIds: string[] }
+  | { type: 'featureNoticed'; feature: FeatureKind }
+  | { type: 'exploreFinished' }
+  | { type: 'autoLimitReached' }
   | { type: 'gameWon' }

@@ -11,6 +11,17 @@ export interface LogMessage {
   turn: number
 }
 
+/**
+ * Кадр анимации многоходового действия: позиция игрока после шага и клетки памяти карты,
+ * изменившиеся на этом шаге (cells[i] — индекс y*width+x, tiles[i] — символ).
+ */
+export interface MoveFrame {
+  x: number
+  y: number
+  cells: number[]
+  tiles: string
+}
+
 export interface GameSummary {
   status: 'dead' | 'won'
   name: string
@@ -29,6 +40,6 @@ export type ClientMsg =
 
 export type ServerMsg =
   | { type: 'welcome'; token: string; hasActiveGame: boolean; lastSummary?: GameSummary }
-  | { type: 'view'; seq: number; view: PlayerView; messages: LogMessage[]; fresh?: boolean }
+  | { type: 'view'; seq: number; view: PlayerView; messages: LogMessage[]; fresh?: boolean; frames?: MoveFrame[] }
   | { type: 'gameOver'; summary: GameSummary }
   | { type: 'error'; message: string; seq?: number }

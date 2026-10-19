@@ -157,6 +157,7 @@ export type RejectReasonKey =
   | 'notDamaged'
   | 'notUsable'
   | 'equippedItem'
+  | 'nothingToExplore'
 
 // ---------- Навыки ----------
 

@@ -39,7 +39,17 @@ export const store = reactive({
   inspect: null as { x: number; y: number } | null,
   /** Режим осмотра с клавиатуры (x). */
   lookMode: false,
+  /** Кадр анимации многоходового действия (пока идёт — карта рисуется по нему, без монстров и предметов). */
+  anim: null as AnimFrame | null,
 })
+
+export interface AnimFrame {
+  /** Символы клеток (как map.tiles) и видимость ('2' — рядом с игроком, '1' — запомнена, '0' — неизвестна). */
+  tiles: string
+  vis: string
+  x: number
+  y: number
+}
 
 let nextLogId = 1
 export const LOG_LIMIT = 100

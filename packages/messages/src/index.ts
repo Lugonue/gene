@@ -281,13 +281,19 @@ export function renderEvents(events: GameEvent[], viewerId: string, opts: Render
         break
       }
 
-      case 'itemsHere': {
+      case 'itemsHere':
+      case 'itemsNoticed': {
         const counts = new Map<string, number>()
         for (const id of e.itemDefIds) counts.set(id, (counts.get(id) ?? 0) + 1)
         const list = [...counts].map(([id, n]) => itemWords(id).nom + countSuffix(n)).join(', ')
-        push(msg(choose(rng, ['itemsHere'], { roles: {}, vars: { list } }), turn, 'narrative'))
+        const kind = e.type === 'itemsHere' ? 'narrative' : 'system'
+        push(msg(choose(rng, [e.type], { roles: {}, vars: { list } }), turn, kind))
         break
       }
+
+      case 'featureNoticed':
+        push(msg(choose(rng, [`featureNoticed.${e.feature}`], { roles: {} }), turn, 'system'))
+        break
 
       case 'itemPickedUp':
       case 'itemDropped': {
@@ -322,6 +328,8 @@ export function renderEvents(events: GameEvent[], viewerId: string, opts: Render
       case 'doorOpened':
       case 'restInterrupted':
       case 'restFinished':
+      case 'exploreFinished':
+      case 'autoLimitReached':
       case 'gameWon':
         push(msg(choose(rng, [e.type], { roles: {} }), turn))
         break

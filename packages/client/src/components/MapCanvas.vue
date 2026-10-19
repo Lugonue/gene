@@ -15,7 +15,9 @@ function draw(): void {
   const el = canvas.value
   const view = store.view
   if (!el || !view) return
-  const { width, height, tiles, vis } = view.map
+  const anim = store.anim
+  const { width, height } = view.map
+  const { tiles, vis } = anim ?? view.map
   const dpr = window.devicePixelRatio || 1
   const cssW = width * CELL_W
   const cssH = height * CELL_H
@@ -48,6 +50,13 @@ function draw(): void {
       const c = TILE_COLORS[ch] ?? { lit: '#cccccc', dim: '#444444' }
       glyph(x, y, ch, v === '2' ? c.lit : c.dim)
     }
+  }
+
+  if (anim) {
+    g.fillStyle = '#000'
+    g.fillRect(anim.x * CELL_W, anim.y * CELL_H, CELL_W, CELL_H)
+    glyph(anim.x, anim.y, '@', PLAYER_COLOR)
+    return
   }
 
   for (const it of view.floorItems) {
@@ -84,7 +93,7 @@ function cellFromEvent(ev: MouseEvent): { x: number; y: number } | null {
 }
 
 onMounted(draw)
-watch(() => [store.view, store.inspect], draw, { deep: false })
+watch(() => [store.view, store.inspect, store.anim], draw, { deep: false })
 </script>
 
 <template>

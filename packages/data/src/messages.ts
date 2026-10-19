@@ -275,6 +275,12 @@ export const TEMPLATES: Record<string, string[]> = {
   restInterrupted: ['Отдых прерван: рядом враг.'],
   restFinished: ['[ДИАГНОСТИКА] Отдых завершён.'],
   gameWon: ['[ЯДРО] Портал активирован. Возврат во временную линию…'],
+  itemsNoticed: ['[ЯДРО] Обнаружено: {list}.'],
+  'featureNoticed.stairsDown': ['[ЯДРО] Обнаружена лестница вниз.'],
+  'featureNoticed.stairsUp': ['[ЯДРО] Обнаружена лестница вверх.'],
+  'featureNoticed.portal': ['[ЯДРО] Обнаружен портал.'],
+  exploreFinished: ['[ЯДРО] Уровень исследован.'],
+  autoLimitReached: ['[ЯДРО] Маршрут прерван: слишком долгий путь.'],
 }
 
 /** Род. п. категории снаряжения для «Новый тип …». */
@@ -298,4 +304,5 @@ export const REJECT_TEXT: Record<RejectReasonKey, string> = {
   notDamaged: 'Чинить или лечить нечего.',
   notUsable: 'Это нельзя применить.',
   equippedItem: 'Сначала сними предмет.',
+  nothingToExplore: 'Здесь больше нечего исследовать.',
 }
