@@ -45,7 +45,7 @@ describe('прочность', () => {
     const s = newTestGame(21)
     clearMonsters(s)
     const p = player(s)
-    const goblin = spawnMonster(s, 'goblin_brute', p.depth, p.x + 1, p.y)
+    const goblin = spawnMonster(s, 'goblin_brute', p.depth, p.x + 1, p.y, ['dagger', 'leather_jacket'])
     const helmet = createEquipped(s, goblin, 'helmet')
     const jacket = s.items[goblin.equipment.body!]!
     // Попадания возможны только в торс.
@@ -199,7 +199,7 @@ describe('инвентарь и снаряжение', () => {
     const s = newTestGame(44)
     clearMonsters(s)
     const p = player(s)
-    const goblin = spawnMonster(s, 'goblin_brute', p.depth, p.x + 1, p.y)
+    const goblin = spawnMonster(s, 'goblin_brute', p.depth, p.x + 1, p.y, ['dagger'])
     const dagger = s.items[goblin.equipment.weapon!]!
     dagger.durability = 17
     goblin.hp = 1

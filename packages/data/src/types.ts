@@ -87,8 +87,6 @@ export interface MonsterDef {
   speed: number
   /** Естественные атаки (если нет оружия). */
   attacks: NaturalAttackDef[]
-  /** Стартовое снаряжение: id типов предметов. */
-  equipment?: string[]
   /** Навыки монстра (уровень 0–27). */
   skills: Partial<Record<SkillId, number>>
   evasion: number
@@ -122,6 +120,14 @@ export interface FactionDef {
   trait: FactionTrait
   /** Снаряжение, из которого генерируется снаряжение монстров фракции. */
   gear: string[]
+}
+
+/** Как роль выбирает снаряжение из набора фракции. */
+export interface RoleGearDef {
+  /** Навыки оружия, подходящего роли; пусто — роль без оружия (звери). */
+  weaponSkills: SkillId[]
+  /** Шанс надеть броню на каждый вид брони (голова, тело, руки, ноги), если она есть в наборе фракции. */
+  armourChance: number
 }
 
 // ---------- Предметы ----------

@@ -37,11 +37,13 @@ export const ATTACKS: Record<string, NaturalAttackDef> = {
   },
 }
 
-/** Сколько монстров (групп считаются по особям) ставится на уровень. */
-export const MONSTERS_PER_LEVEL: [number, number] = [6, 12]
+/** Размер обычного отряда (сколько монстров ставится вместе). */
+export const SQUAD_SIZE: [number, number] = [1, 4]
+/** Свита вожака (без самого вожака). */
+export const LEADER_RETINUE: [number, number] = [1, 3]
 
-// Виды по фракциям (docs/lore.md, «Монстры: фракции и роли»). Стрелки до появления дальнего боя
-// носят кинжал, маги — посох. Вожак ставится отдельно, его spawnWeight не используется.
+// Виды по фракциям (docs/lore.md, «Монстры: фракции и роли»). Снаряжение генерируется из набора фракции
+// по роли (ROLE_GEAR). Вожак ставится отдельно, его spawnWeight не используется.
 export const MONSTERS: Record<string, MonsterDef> = {
   // ----- Гоблины (1-й уровень) -----
   goblin_brute: {
@@ -65,7 +67,6 @@ export const MONSTERS: Record<string, MonsterDef> = {
     partHpScale: 0.7,
     speed: 10,
     attacks: [ATTACKS.fist!],
-    equipment: ['dagger', 'leather_jacket'],
     skills: { short_blades: 2, fighting: 2, dodging: 1 },
     evasion: 5,
     xp: 6,
@@ -94,7 +95,6 @@ export const MONSTERS: Record<string, MonsterDef> = {
     partHpScale: 0.6,
     speed: 10,
     attacks: [ATTACKS.fist!],
-    equipment: ['dagger'],
     skills: { short_blades: 1, fighting: 1, dodging: 2 },
     evasion: 6,
     xp: 5,
@@ -123,7 +123,6 @@ export const MONSTERS: Record<string, MonsterDef> = {
     partHpScale: 0.6,
     speed: 10,
     attacks: [ATTACKS.fist!],
-    equipment: ['staff'],
     skills: { staves: 1, fighting: 1, dodging: 1 },
     evasion: 5,
     xp: 7,
@@ -158,7 +157,6 @@ export const MONSTERS: Record<string, MonsterDef> = {
     partHpScale: 0.9,
     speed: 10,
     attacks: [ATTACKS.fist!],
-    equipment: ['short_sword', 'leather_jacket', 'helmet'],
     skills: { long_blades: 4, fighting: 4, dodging: 2, light_armour: 2 },
     evasion: 5,
     xp: 16,
@@ -178,7 +176,6 @@ export const MONSTERS: Record<string, MonsterDef> = {
     partHpScale: 1.1,
     speed: 10,
     attacks: [ATTACKS.fist!],
-    equipment: ['axe', 'leather_jacket'],
     skills: { axes: 4, fighting: 4, dodging: 1, light_armour: 2 },
     evasion: 4,
     xp: 14,
@@ -200,7 +197,6 @@ export const MONSTERS: Record<string, MonsterDef> = {
     partHpScale: 1.0,
     speed: 10,
     attacks: [ATTACKS.fist!],
-    equipment: ['dagger', 'leather_jacket'],
     skills: { short_blades: 3, fighting: 3, dodging: 2 },
     evasion: 5,
     xp: 12,
@@ -222,7 +218,6 @@ export const MONSTERS: Record<string, MonsterDef> = {
     partHpScale: 1.0,
     speed: 10,
     attacks: [ATTACKS.fist!],
-    equipment: ['staff'],
     skills: { staves: 3, fighting: 2, dodging: 1 },
     evasion: 4,
     xp: 14,
@@ -268,7 +263,6 @@ export const MONSTERS: Record<string, MonsterDef> = {
     partHpScale: 1.3,
     speed: 10,
     attacks: [ATTACKS.fist!],
-    equipment: ['axe', 'chainmail', 'helmet'],
     skills: { axes: 6, fighting: 6, dodging: 2, heavy_armour: 4 },
     evasion: 4,
     xp: 30,
@@ -288,7 +282,6 @@ export const MONSTERS: Record<string, MonsterDef> = {
     partHpScale: 1.1,
     speed: 10,
     attacks: [ATTACKS.fist!],
-    equipment: ['mace', 'chainmail', 'helmet'],
     skills: { maces: 5, fighting: 5, dodging: 2, heavy_armour: 4 },
     evasion: 4,
     xp: 18,
@@ -310,7 +303,6 @@ export const MONSTERS: Record<string, MonsterDef> = {
     partHpScale: 1.0,
     speed: 10,
     attacks: [ATTACKS.fist!],
-    equipment: ['dagger', 'leather_jacket', 'helmet'],
     skills: { short_blades: 4, fighting: 4, dodging: 3, light_armour: 2 },
     evasion: 5,
     xp: 15,
@@ -328,7 +320,6 @@ export const MONSTERS: Record<string, MonsterDef> = {
     partHpScale: 0.9,
     speed: 10,
     attacks: [ATTACKS.fist!],
-    equipment: ['staff'],
     skills: { staves: 4, fighting: 3, dodging: 2 },
     evasion: 5,
     xp: 18,
@@ -371,7 +362,6 @@ export const MONSTERS: Record<string, MonsterDef> = {
     partHpScale: 1.4,
     speed: 10,
     attacks: [ATTACKS.fist!],
-    equipment: ['mace', 'chainmail', 'helmet', 'leather_gloves'],
     skills: { maces: 7, fighting: 7, dodging: 3, heavy_armour: 5 },
     evasion: 5,
     xp: 40,
@@ -402,7 +392,6 @@ export const MONSTERS: Record<string, MonsterDef> = {
     partHpScale: 1.2,
     speed: 10,
     attacks: [ATTACKS.fist!],
-    equipment: ['short_sword', 'chainmail'],
     skills: { long_blades: 6, fighting: 6, dodging: 3, heavy_armour: 4 },
     evasion: 5,
     xp: 22,
@@ -431,7 +420,6 @@ export const MONSTERS: Record<string, MonsterDef> = {
     partHpScale: 1.0,
     speed: 10,
     attacks: [ATTACKS.fist!],
-    equipment: ['dagger', 'leather_jacket'],
     skills: { short_blades: 5, fighting: 5, dodging: 4, light_armour: 3 },
     evasion: 6,
     xp: 18,
@@ -460,7 +448,6 @@ export const MONSTERS: Record<string, MonsterDef> = {
     partHpScale: 1.0,
     speed: 10,
     attacks: [ATTACKS.fist!],
-    equipment: ['staff'],
     skills: { staves: 5, fighting: 4, dodging: 3 },
     evasion: 5,
     xp: 22,
@@ -517,7 +504,6 @@ export const MONSTERS: Record<string, MonsterDef> = {
     partHpScale: 1.5,
     speed: 10,
     attacks: [ATTACKS.fist!],
-    equipment: ['axe', 'chainmail', 'helmet', 'greaves'],
     skills: { axes: 8, fighting: 8, dodging: 3, heavy_armour: 6 },
     evasion: 5,
     xp: 60,

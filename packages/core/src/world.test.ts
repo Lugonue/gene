@@ -7,6 +7,8 @@ import { newTestGame, run, stairsPos, walkTo } from './testing'
 import { buildView } from './view'
 import { ensureLevel, findTile } from './world/level'
 import { FACTIONS, MONSTERS } from '@gene/data'
+import { levelThreatBudget } from './combat/formulas'
+import { creatureThreat } from './world/squads'
 
 describe('генерация уровней', () => {
   it('уровень 80×40, есть нужные лестницы и портал', () => {
@@ -42,6 +44,38 @@ describe('фракции на уровнях', () => {
         expect(leaders).toHaveLength(1)
         const exit = findTile(s, depth, depth === 4 ? TILE.portal : TILE.stairsDown)!
         expect(Math.max(Math.abs(leaders[0]!.x - exit.x), Math.abs(leaders[0]!.y - exit.y))).toBeLessThanOrEqual(10)
+      }
+    }
+  })
+
+  it('отряд стоит кучно, угроза уровня не превышает бюджет', () => {
+    for (let seed = 1; seed <= 20; seed++) {
+      const s = newTestGame(seed)
+      for (const depth of [1, 2, 3, 4]) {
+        ensureLevel(s, depth)
+        const monsters = monstersOn(s, depth)
+        const threat = monsters.reduce((sum, c) => sum + creatureThreat(s, c), 0)
+        expect(threat).toBeLessThanOrEqual(levelThreatBudget(depth))
+        expect(threat).toBeGreaterThanOrEqual(levelThreatBudget(depth) * 0.85)
+        expect(monsters.every((c) => c.squad !== undefined)).toBe(true)
+        const squads = new Map<string | undefined, typeof monsters>()
+        for (const c of monsters) squads.set(c.squad, [...(squads.get(c.squad) ?? []), c])
+        expect(squads.size).toBeGreaterThan(1)
+        for (const members of squads.values()) {
+          // Каждый член отряда стоит вплотную хотя бы к одному другому (связная группа соседних клеток).
+          const reached = new Set([members[0]!])
+          for (let grew = true; grew; ) {
+            grew = false
+            for (const c of members) {
+              if (reached.has(c)) continue
+              if ([...reached].some((r) => Math.max(Math.abs(r.x - c.x), Math.abs(r.y - c.y)) === 1)) {
+                reached.add(c)
+                grew = true
+              }
+            }
+          }
+          expect(reached.size, members.map((c) => c.kind).join()).toBe(members.length)
+        }
       }
     }
   })

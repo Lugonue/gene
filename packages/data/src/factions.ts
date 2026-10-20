@@ -1,6 +1,18 @@
-import type { FactionDef, FactionId, MonsterRole } from './types'
+import type { FactionDef, FactionId, MonsterRole, RoleGearDef } from './types'
 
 export const MONSTER_ROLES: MonsterRole[] = ['warrior', 'archer', 'mage', 'beast', 'leader']
+
+/**
+ * Снаряжение по ролям. Стрелки до появления дальнего боя (задача 03) берут короткий клинок,
+ * маги — посох; звери снаряжения не носят.
+ */
+export const ROLE_GEAR: Record<MonsterRole, RoleGearDef> = {
+  warrior: { weaponSkills: ['short_blades', 'long_blades', 'maces', 'axes'], armourChance: 0.6 },
+  archer: { weaponSkills: ['short_blades'], armourChance: 0.35 },
+  mage: { weaponSkills: ['staves'], armourChance: 0.15 },
+  beast: { weaponSkills: [], armourChance: 0 },
+  leader: { weaponSkills: ['long_blades', 'maces', 'axes'], armourChance: 0.9 },
+}
 
 /** Фракции по глубине: каждая занимает свой уровень целиком (docs/lore.md). */
 export const FACTIONS: Record<FactionId, FactionDef> = {

@@ -3,11 +3,13 @@ import {
   BODY_PLANS,
   ITEMS,
   MONSTERS,
+  SKILLS,
   SLOTS,
   type ArmourDef,
   type ArmourSlotId,
   type BodyPartDef,
   type BodyPlanDef,
+  type MonsterDef,
   type PartTag,
   type SkillId,
   type SlotId,
@@ -90,5 +92,22 @@ export function isEquipped(c: Creature, itemId: string): SlotId | undefined {
 /** Уровень навыка существа: у игрока — из базы знаний ядра, у монстра — из данных вида. */
 export function skillLevel(state: GameState, c: Creature, skill: SkillId): number {
   if (c.kind === 'player') return skillLevelFromXp(state.knowledge.skillXp[skill] ?? 0)
-  return MONSTERS[c.kind]?.skills[skill] ?? 0
+  const def = MONSTERS[c.kind]
+  return def ? speciesSkill(def, skill) : 0
+}
+
+/**
+ * Навык вида. Снаряжение монстров случайное, поэтому оружием и бронёй, которых нет в навыках вида,
+ * монстр владеет на уровне своего лучшего навыка той же группы.
+ */
+export function speciesSkill(def: MonsterDef, skill: SkillId): number {
+  const own = def.skills[skill]
+  if (own !== undefined) return own
+  const group = SKILLS[skill].group
+  if (group === 'general') return 0
+  let best = 0
+  for (const [id, level] of Object.entries(def.skills)) {
+    if (SKILLS[id as SkillId].group === group) best = Math.max(best, level ?? 0)
+  }
+  return best
 }

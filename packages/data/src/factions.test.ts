@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { FACTIONS, MONSTERS, MONSTER_ROLES } from './index'
+import { FACTIONS, MONSTERS, MONSTER_ROLES, ROLE_GEAR } from './index'
 
 describe('фракции и виды', () => {
   it('четыре фракции занимают уровни 1–4, по одной на уровень', () => {
@@ -24,7 +24,7 @@ describe('фракции и виды', () => {
   it('звери фракций ходят на четырёх лапах и без снаряжения', () => {
     for (const m of Object.values(MONSTERS).filter((m) => m.role === 'beast')) {
       expect(m.bodyPlan, m.id).toBe('quadruped')
-      expect(m.equipment ?? [], m.id).toEqual([])
     }
+    expect(ROLE_GEAR.beast).toEqual({ weaponSkills: [], armourChance: 0 })
   })
 })

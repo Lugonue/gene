@@ -376,3 +376,40 @@ export function wantsToFlee(rng: RngState, c: Creature, trait?: FactionTrait): b
 export function hasTag(def: BodyPartDef, tag: PartTag): boolean {
   return def.tags.includes(tag)
 }
+
+// ---------------------------------------------------------------------------
+// Угроза монстров и бюджет уровня
+// ---------------------------------------------------------------------------
+
+export interface ThreatInput {
+  maxHp: number
+  speed: number
+  evasion: number
+  /** Лучшая атака: урон и точность оружия или естественной атаки. */
+  damage: number
+  accuracy: number
+  /** Навык этой атаки (для естественных атак — fighting). */
+  attackSkill: number
+  fighting: number
+  dodging: number
+  /** Сумма поглощения надетой брони. */
+  absorb: number
+  trait: FactionTrait
+}
+
+/** Бесстрашные и упорные опаснее, трусливые — слабее своих чисел. */
+const TRAIT_THREAT: Record<FactionTrait, number> = { cowardly: 0.9, fearless: 1.1, relentless: 1.1, rallying: 1 }
+
+/** Угроза монстра: нападение (урон × навыки) плюс живучесть (hp, броня, уклонение), × скорость и черта фракции. */
+export function monsterThreat(t: ThreatInput): number {
+  const offence = t.damage * (1 + 0.04 * t.attackSkill + 0.02 * t.fighting) + t.accuracy / 4
+  const defence = t.maxHp / 4 + t.absorb + (t.evasion + 1.5 * t.dodging) / 3
+  return Math.max(1, Math.round((offence + defence) * (t.speed / 10) * TRAIT_THREAT[t.trait]))
+}
+
+/** Бюджет угрозы по глубине (≈ 8–12 монстров на уровень); в него входит и отряд вожака. */
+const LEVEL_THREAT_BUDGET = [0, 120, 230, 260, 280]
+
+export function levelThreatBudget(depth: number): number {
+  return LEVEL_THREAT_BUDGET[depth] ?? LEVEL_THREAT_BUDGET[LEVEL_THREAT_BUDGET.length - 1]!
+}

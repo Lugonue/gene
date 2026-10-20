@@ -77,6 +77,8 @@ export interface Creature {
   regenAcc: number
   /** trackUntil — до какого момента (aut) монстр чует след невидимого игрока (черта relentless). */
   ai?: { mode: AiMode; lastSeen?: Pos; noticed?: boolean; trackUntil?: number }
+  /** Отряд, с которым монстр появился на уровне. */
+  squad?: string
 }
 
 export type ItemLocation =
