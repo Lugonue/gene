@@ -52,7 +52,7 @@ describe('навыки и база знаний', () => {
     const p = player(s)
     p.hp = p.maxHp = 100_000
     for (const part of p.parts) part.hp = part.maxHp = 100_000
-    const goblin = spawnMonster(s, 'goblin', 1, p.x + 1, p.y)
+    const goblin = spawnMonster(s, 'goblin_brute', 1, p.x + 1, p.y)
     const light = s.knowledge.skillXp.light_armour
     const dodge = s.knowledge.skillXp.dodging
     const ctx: Ctx = { state: s, events: [] }
@@ -78,7 +78,7 @@ describe('навыки и база знаний', () => {
     const s = createGame(7, { name: 'КБ', bodyPlan: 'humanoid', startWeapon: 'mace' })
     for (const id of Object.keys(s.creatures)) if (id !== s.playerId) delete s.creatures[id]
     const p = player(s)
-    const rat = spawnMonster(s, 'rat', 1, p.x + 1, p.y)
+    const rat = spawnMonster(s, 'hyena', 1, p.x + 1, p.y)
     const before = s.knowledge.skillXp.maces
     const ctx: Ctx = { state: s, events: [] }
     let attacks = 0

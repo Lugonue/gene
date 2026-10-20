@@ -54,6 +54,18 @@ export const ITEMS: Record<string, ItemDef> = {
     skill: 'axes',
     maxDurability: 50,
   },
+  staff: {
+    id: 'staff',
+    category: 'weapon',
+    name: w(['посох', 'посоха', 'посоху', 'посох', 'посохом', 'посохе'], 'm'),
+    glyph: ')',
+    color: WEAPON_COLOR,
+    damage: 4,
+    accuracy: 3,
+    damageType: 'blunt',
+    skill: 'staves',
+    maxDurability: 50,
+  },
 
   // ----- Броня -----
   helmet: {

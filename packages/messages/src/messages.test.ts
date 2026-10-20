@@ -135,10 +135,10 @@ describe('сообщения: перебор комбинаций', () => {
 })
 
 describe('сообщения: падежи и род (контрольные примеры)', () => {
-  const goblin = { words: MONSTERS.goblin!.name, person: 3 as const }
+  const goblin = { words: MONSTERS.goblin_brute!.name, person: 3 as const }
   const orc = { words: MONSTERS.orc_warrior!.name, person: 3 as const }
-  const rat = { words: MONSTERS.rat!.name, person: 3 as const }
-  const wolf = { words: MONSTERS.wolf!.name, person: 3 as const }
+  const rat = { words: MONSTERS.hyena!.name, person: 3 as const }
+  const wolf = { words: MONSTERS.warg!.name, person: 3 as const }
   type Owner = { words: WordForms; person: 2 | 3 }
   const you: Owner = { words: PLAYER_WORDS, person: 2 }
   const item = (id: string, owner?: Owner) => ({ words: ITEMS[id]!.name, person: 3 as const, ...(owner ? { owner } : {}) })
@@ -151,17 +151,17 @@ describe('сообщения: падежи и род (контрольные п�
   it('пример из ТЗ', () => {
     const t = '{attacker.nom} {verb:бить} {target.acc} по {part.dat} {weapon.ins}.'
     expect(fill(t, { subject: 'attacker', roles: { attacker: goblin, target: you, part: part('player', 'left_arm'), weapon: item('dagger') } })).toBe(
-      'Гоблин бьёт тебя по левой руке кинжалом.',
+      'Гоблин-громила бьёт тебя по левой руке кинжалом.',
     )
-    expect(fill(t, { subject: 'attacker', roles: { attacker: you, target: rat, part: part('rat', 'head'), weapon: item('mace') } })).toBe(
-      'Ты бьёшь крысу по голове булавой.',
+    expect(fill(t, { subject: 'attacker', roles: { attacker: you, target: rat, part: part('hyena', 'head'), weapon: item('mace') } })).toBe(
+      'Ты бьёшь гиену по голове булавой.',
     )
   })
 
   it('глагол по лицу: ты промахиваешься / волк промахивается', () => {
     const t = '{attacker.nom} {verb:промахиваться}.'
     expect(fill(t, { subject: 'attacker', roles: { attacker: you } })).toBe('Ты промахиваешься.')
-    expect(fill(t, { subject: 'attacker', roles: { attacker: wolf } })).toBe('Волк промахивается.')
+    expect(fill(t, { subject: 'attacker', roles: { attacker: wolf } })).toBe('Варг промахивается.')
   })
 
   it('притяжательные обороты и род частей тела', () => {
@@ -177,30 +177,30 @@ describe('сообщения: падежи и род (контрольные п�
         subject: 'attacker',
         roles: { attacker: goblin, weapon: item('dagger'), tpart: part('player', 'left_lower_arm', you) },
       }),
-    ).toBe('Гоблин вонзает кинжал в твою левую нижнюю руку.')
+    ).toBe('Гоблин-громила вонзает кинжал в твою левую нижнюю руку.')
     expect(
       fill('{attacker.nom} {verb:впиваться} зубами в {tpart.acc}.', {
         subject: 'attacker',
-        roles: { attacker: wolf, tpart: part('jackal', 'front_left_leg', { words: MONSTERS.jackal!.name, person: 3 }) },
+        roles: { attacker: wolf, tpart: part('hyena', 'front_left_leg', { words: MONSTERS.hyena!.name, person: 3 }) },
       }),
-    ).toBe('Волк впивается зубами в левую переднюю лапу шакала.')
+    ).toBe('Варг впивается зубами в левую переднюю лапу гиены.')
   })
 
   it('оружие владельца в родительном падеже: «от твоей булавы», «от когтей волка»', () => {
     const t = '{target.nom} {verb:уворачиваться@target} от {aweapon.gen}.'
-    expect(fill(t, { roles: { target: goblin, aweapon: item('mace', you) } })).toBe('Гоблин уворачивается от твоей булавы.')
+    expect(fill(t, { roles: { target: goblin, aweapon: item('mace', you) } })).toBe('Гоблин-громила уворачивается от твоей булавы.')
     expect(fill(t, { roles: { target: goblin, aweapon: item('short_sword', you) } })).toBe(
-      'Гоблин уворачивается от твоего короткого меча.',
+      'Гоблин-громила уворачивается от твоего короткого меча.',
     )
     expect(
       fill(t, { roles: { target: you, aweapon: { words: ATTACKS.claws!.name, person: 3, owner: wolf } } }),
-    ).toBe('Ты уворачиваешься от когтей волка.')
+    ).toBe('Ты уворачиваешься от когтей варга.')
   })
 
   it('множественное число предметов: «Кожаные перчатки гоблина ломаются!»', () => {
     expect(
       fill('{oitem.nom} {verb:ломаться@item}!', { roles: { item: item('leather_gloves'), oitem: item('leather_gloves', goblin) } }),
-    ).toBe('Кожаные перчатки гоблина ломаются!')
+    ).toBe('Кожаные перчатки гоблина-громилы ломаются!')
     expect(fill('[ЯДРО] {^item.nom} {adj:разобран@item}.', { roles: { item: item('heal_potion') } })).toBe(
       '[ЯДРО] Зелье лечения разобрано.',
     )
@@ -208,12 +208,12 @@ describe('сообщения: падежи и род (контрольные п�
 
   it('одушевлённый винительный: «Ты замечаешь волка / крысу»', () => {
     const t = 'Ты замечаешь {creature.acc}.'
-    expect(fill(t, { roles: { creature: wolf } })).toBe('Ты замечаешь волка.')
-    expect(fill(t, { roles: { creature: rat } })).toBe('Ты замечаешь крысу.')
+    expect(fill(t, { roles: { creature: wolf } })).toBe('Ты замечаешь варга.')
+    expect(fill(t, { roles: { creature: rat } })).toBe('Ты замечаешь гиену.')
   })
 
   it('выбор варианта детерминирован (сид + ход)', () => {
-    const e: GameEvent[] = [{ type: 'attackMissed', attacker: mon('goblin'), target: PLAYER, attack: weaponAttack('dagger'), partId: 'head' }]
+    const e: GameEvent[] = [{ type: 'attackMissed', attacker: mon('goblin_brute'), target: PLAYER, attack: weaponAttack('dagger'), partId: 'head' }]
     expect(renderEvents(e, 'p', { seed: 9, turn: 3 })).toEqual(renderEvents(e, 'p', { seed: 9, turn: 3 }))
   })
 

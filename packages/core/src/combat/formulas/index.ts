@@ -1,6 +1,6 @@
 // МОДУЛЬ-ЗАГЛУШКА: все числа и формулы боя, ран, прочности, регенерации и опыта (см. README.md рядом).
 // Остальной код core не содержит собственных боевых констант и вызывает только функции отсюда.
-import type { BodyPartDef, DamageType, Material, PartTag, SkillId, WoundStage } from '@gene/data'
+import type { BodyPartDef, DamageType, FactionTrait, Material, PartTag, SkillId, WoundStage } from '@gene/data'
 import { nextFloat, randInt, chance as roll, weightedIndex, type RngState } from '../../rng'
 import type { BionicUpgrades, BodyPartState, Creature, ItemInstance, StudyStatus } from '../../state'
 import { mainHand, partDef, partsWithTag } from '../../body'
@@ -360,8 +360,15 @@ export function studyStatusFor(data: number): StudyStatus {
 // ИИ
 // ---------------------------------------------------------------------------
 
-export function wantsToFlee(rng: RngState, c: Creature): boolean {
-  const lowHp = c.hp < c.maxHp * 0.25
+/** Доля HP, ниже которой монстр может отступить: трусливые фракции бегут раньше. */
+const FLEE_HP_SHARE = 0.25
+const COWARDLY_FLEE_HP_SHARE = 0.5
+/** Сколько времени (aut) фракция с чертой relentless идёт по следу игрока, пропавшего из виду. */
+export const TRACK_TIME = 200
+
+export function wantsToFlee(rng: RngState, c: Creature, trait?: FactionTrait): boolean {
+  if (trait === 'fearless') return false
+  const lowHp = c.hp < c.maxHp * (trait === 'cowardly' ? COWARDLY_FLEE_HP_SHARE : FLEE_HP_SHARE)
   const legs = partsWithTag(c, 'stance').some((p) => stageIndex(p.wound) >= stageIndex('crippled'))
   return (lowHp || legs) && roll(rng, 0.35)
 }

@@ -94,11 +94,34 @@ export interface MonsterDef {
   evasion: number
   /** Опыт за убийство (распределяется по навыкам, использованным в бою). */
   xp: number
-  packSize?: [number, number]
-  /** Минимальная/максимальная глубина появления и вес при расстановке. */
-  depth: [number, number]
+  faction: FactionId
+  role: MonsterRole
+  /** Вес при расстановке среди видов фракции (вожак ставится отдельно). */
   spawnWeight: number
-  boss?: boolean
+}
+
+// ---------- Фракции ----------
+
+export type FactionId = 'goblins' | 'orcs' | 'order' | 'kobolds'
+
+/** Боевое амплуа монстра внутри фракции. */
+export type MonsterRole = 'warrior' | 'archer' | 'mage' | 'beast' | 'leader'
+
+/**
+ * Черта поведения фракции:
+ * cowardly — отступает раньше; fearless — не отступает;
+ * relentless — ещё какое-то время идёт по следу невидимого игрока; rallying — отступает к союзникам.
+ */
+export type FactionTrait = 'cowardly' | 'fearless' | 'relentless' | 'rallying'
+
+export interface FactionDef {
+  id: FactionId
+  name: string
+  /** Уровень подземелья, который фракция занимает целиком. */
+  depth: number
+  trait: FactionTrait
+  /** Снаряжение, из которого генерируется снаряжение монстров фракции. */
+  gear: string[]
 }
 
 // ---------- Предметы ----------
@@ -166,6 +189,7 @@ export type SkillId =
   | 'long_blades'
   | 'maces'
   | 'axes'
+  | 'staves'
   | 'unarmed'
   | 'light_armour'
   | 'heavy_armour'

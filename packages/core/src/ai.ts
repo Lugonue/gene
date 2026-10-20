@@ -1,9 +1,10 @@
 // Простой ИИ монстров: видит игрока — идёт к нему (A*) и атакует; ранен — может отступать; иначе бродит.
 import * as ROT from 'rot-js'
+import { FACTIONS, MONSTERS, type FactionTrait } from '@gene/data'
 import type { Ctx } from './context'
 import { DIRS, TILE, creatureAt, player, setTile, tileAt, type Creature, type Pos } from './state'
 import { actionCost, spendTime } from './time'
-import { fovRadius, wantsToFlee } from './combat/formulas'
+import { TRACK_TIME, fovRadius, wantsToFlee } from './combat/formulas'
 import { actorRef, resolveAttack } from './combat/attack'
 import { planOf } from './body'
 import { chance, pick } from './rng'
@@ -15,12 +16,19 @@ export function monsterTurn(ctx: Ctx, c: Creature): void {
   const ai = (c.ai ??= { mode: 'idle' })
   const level = state.levels[c.depth]!
 
+  const trait = factionTrait(c)
   const sees = c.depth === p.depth && canSee(ctx, c, p)
-  if (sees) ai.lastSeen = { x: p.x, y: p.y }
+  if (sees) {
+    ai.lastSeen = { x: p.x, y: p.y }
+    if (trait === 'relentless') ai.trackUntil = state.now + TRACK_TIME
+  } else if (ai.trackUntil !== undefined && c.depth === p.depth && state.now < ai.trackUntil) {
+    // Идёт по следу: знает, где игрок, хотя и не видит его.
+    ai.lastSeen = { x: p.x, y: p.y }
+  }
 
   // Отступление раненых.
   if (sees) {
-    const flee = wantsToFlee(state.rng, c)
+    const flee = wantsToFlee(state.rng, c, trait)
     if (flee && ai.mode !== 'flee') {
       ai.mode = 'flee'
       ctx.events.push({ type: 'monsterFlees', creature: actorRef(c) })
@@ -28,7 +36,16 @@ export function monsterTurn(ctx: Ctx, c: Creature): void {
     else if (ai.mode === 'idle') ai.mode = 'hunt'
   }
 
-  const adjacent = sees && Math.max(Math.abs(c.x - p.x), Math.abs(c.y - p.y)) === 1
+  const adjacent = sees && distance(c, p) === 1
+
+  // Отступает не прочь от игрока, а к ближайшему союзнику; рядом с ним держится.
+  if (ai.mode === 'flee' && trait === 'rallying') {
+    const ally = nearestAlly(ctx, c)
+    if (ally && distance(c, ally) <= 1) return adjacent ? attack(ctx, c, p) : rest(c)
+    const step = ally && pathStep(ctx, c, ally)
+    if (step) return moveTo(ctx, c, step)
+    // Пути к союзнику нет — отступает как обычно.
+  }
 
   if (ai.mode === 'flee' && sees) {
     const step = fleeStep(ctx, c, p)
@@ -59,7 +76,7 @@ export function monsterTurn(ctx: Ctx, c: Creature): void {
 
 function canSee(ctx: Ctx, c: Creature, target: Creature): boolean {
   const r = fovRadius(c)
-  if (Math.max(Math.abs(c.x - target.x), Math.abs(c.y - target.y)) > r) return false
+  if (distance(c, target) > r) return false
   const level = ctx.state.levels[c.depth]!
   return computeFov(level, c.x, c.y, r).has(target.y * level.width + target.x)
 }
@@ -99,7 +116,7 @@ function pathStep(ctx: Ctx, c: Creature, goal: Pos): Pos | undefined {
   if (!next) return undefined
   // Клетку занимает другой монстр — пробуем обойти соседней клеткой, приближающей к цели.
   if (canEnter(ctx, c, next)) return next
-  const dist = (q: Pos): number => Math.max(Math.abs(q.x - goal.x), Math.abs(q.y - goal.y))
+  const dist = (q: Pos): number => distance(q, goal)
   const alternatives = Object.values(DIRS)
     .map((d) => ({ x: c.x + d.x, y: c.y + d.y }))
     .filter((q) => canEnter(ctx, c, q) && dist(q) < dist(c))
@@ -107,7 +124,7 @@ function pathStep(ctx: Ctx, c: Creature, goal: Pos): Pos | undefined {
 }
 
 function fleeStep(ctx: Ctx, c: Creature, from: Pos): Pos | undefined {
-  const dist = (q: Pos): number => Math.max(Math.abs(q.x - from.x), Math.abs(q.y - from.y))
+  const dist = (q: Pos): number => distance(q, from)
   let best: Pos | undefined
   for (const d of Object.values(DIRS)) {
     const q = { x: c.x + d.x, y: c.y + d.y }
@@ -135,4 +152,24 @@ function attack(ctx: Ctx, c: Creature, target: Creature): void {
 
 function rest(c: Creature): void {
   spendTime(c, actionCost(c, 'wait'))
+}
+
+function factionTrait(c: Creature): FactionTrait | undefined {
+  const def = MONSTERS[c.kind]
+  return def ? FACTIONS[def.faction].trait : undefined
+}
+
+function distance(a: Pos, b: Pos): number {
+  return Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y))
+}
+
+/** Ближайший монстр той же фракции на уровне. */
+function nearestAlly(ctx: Ctx, c: Creature): Creature | undefined {
+  const faction = MONSTERS[c.kind]?.faction
+  let best: Creature | undefined
+  for (const o of Object.values(ctx.state.creatures)) {
+    if (o.id === c.id || o.depth !== c.depth || MONSTERS[o.kind]?.faction !== faction) continue
+    if (!best || distance(c, o) < distance(c, best)) best = o
+  }
+  return best
 }

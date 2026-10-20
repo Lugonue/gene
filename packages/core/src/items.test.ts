@@ -45,7 +45,7 @@ describe('прочность', () => {
     const s = newTestGame(21)
     clearMonsters(s)
     const p = player(s)
-    const goblin = spawnMonster(s, 'goblin', p.depth, p.x + 1, p.y)
+    const goblin = spawnMonster(s, 'goblin_brute', p.depth, p.x + 1, p.y)
     const helmet = createEquipped(s, goblin, 'helmet')
     const jacket = s.items[goblin.equipment.body!]!
     // Попадания возможны только в торс.
@@ -80,7 +80,7 @@ describe('прочность', () => {
     const p = player(s)
     const weapon = s.items[p.equipment.weapon!]!
     weapon.durability = 0
-    const rat = spawnMonster(s, 'rat', p.depth, p.x + 1, p.y)
+    const rat = spawnMonster(s, 'hyena', p.depth, p.x + 1, p.y)
     const ctx: Ctx = { state: s, events: [] }
     resolveAttack(ctx, p, rat)
     const attack = ctx.events.find((e) => e.type === 'attackHit' || e.type === 'attackMissed')
@@ -199,7 +199,7 @@ describe('инвентарь и снаряжение', () => {
     const s = newTestGame(44)
     clearMonsters(s)
     const p = player(s)
-    const goblin = spawnMonster(s, 'goblin', p.depth, p.x + 1, p.y)
+    const goblin = spawnMonster(s, 'goblin_brute', p.depth, p.x + 1, p.y)
     const dagger = s.items[goblin.equipment.weapon!]!
     dagger.durability = 17
     goblin.hp = 1
@@ -243,7 +243,7 @@ describe('изучение снаряжения', () => {
     s = applyCommand(s, { type: 'equip', itemId: axe.id }).state
     const xpBefore = s.knowledge.skillXp.axes
     const dataBefore = s.knowledge.itemData.axe ?? 0
-    const rat = spawnMonster(s, 'rat', 1, player(s).x + 1, player(s).y)
+    const rat = spawnMonster(s, 'hyena', 1, player(s).x + 1, player(s).y)
     rat.hp = rat.maxHp = 10_000
     for (const part of rat.parts) part.hp = part.maxHp = 10_000
     const ctx: Ctx = { state: s, events: [] }

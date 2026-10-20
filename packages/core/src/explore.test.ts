@@ -87,15 +87,15 @@ describe('автоисследование', () => {
 
   it('отклоняется, если монстр в поле зрения; останавливается, когда монстр появляется', () => {
     let s = onMap(['#'.repeat(42), '#@' + '.'.repeat(39) + '#', '#'.repeat(42)])
-    spawnMonster(s, 'rat', 1, 5, 1)
+    spawnMonster(s, 'hyena', 1, 5, 1)
     s = applyCommand(s, { type: 'wait' }).state
     expect(apply(s, { type: 'explore' }).events).toEqual([{ type: 'commandRejected', reason: 'blocked' }])
 
     s = onMap(['#'.repeat(42), '#@' + '.'.repeat(39) + '#', '#'.repeat(42)])
-    spawnMonster(s, 'rat', 1, 30, 1)
+    const m = spawnMonster(s, 'hyena', 1, 30, 1)
     const r = apply(s, { type: 'explore' })
     expect(r.events.some((e) => e.type === 'monsterNoticed')).toBe(true)
-    expect(player(r.state).x).toBeLessThan(30)
+    expect(player(r.state).x).toBeLessThan(r.state.creatures[m.id]!.x)
   })
 
   it('уже открытая карта без неизвестных краёв — исследовать нечего', () => {

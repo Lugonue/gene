@@ -4,7 +4,7 @@ import type { RngState } from './rng'
 
 export const MAP_WIDTH = 80
 export const MAP_HEIGHT = 40
-export const MAX_DEPTH = 3
+export const MAX_DEPTH = 4
 export const INVENTORY_SIZE = 20
 
 export interface Pos {
@@ -75,7 +75,8 @@ export interface Creature {
   nextActAt: number
   /** Накопленное время для регенерации. */
   regenAcc: number
-  ai?: { mode: AiMode; lastSeen?: Pos; noticed?: boolean }
+  /** trackUntil — до какого момента (aut) монстр чует след невидимого игрока (черта relentless). */
+  ai?: { mode: AiMode; lastSeen?: Pos; noticed?: boolean; trackUntil?: number }
 }
 
 export type ItemLocation =

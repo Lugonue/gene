@@ -14,7 +14,7 @@ const hpColor = computed(() => (hpPct.value > 60 ? '#5fd068' : hpPct.value > 30 
       <span class="name">{{ view.player.name }}</span>
       <span class="dim">КИБОРГ</span>
     </div>
-    <div class="row"><span class="dim">Глубина</span> {{ view.depth }} / 3</div>
+    <div class="row"><span class="dim">Глубина</span> {{ view.depth }} / 4</div>
     <div class="row"><span class="dim">Ход</span> {{ view.turn }}</div>
     <div class="row hp">
       <span class="dim">Целостность</span> {{ view.player.hp }}/{{ view.player.maxHp }}

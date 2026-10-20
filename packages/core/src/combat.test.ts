@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { BODY_PLANS, MONSTERS } from '@gene/data'
+import { BODY_PLANS } from '@gene/data'
 import { createRng } from './rng'
 import { applyCommand } from './game'
 import { chooseHitPart, hitChance, woundStageFor, type AttackContext } from './combat/formulas'
@@ -36,7 +36,7 @@ function cripple(part: BodyPartState): void {
 describe('выбор части тела', () => {
   it('распределён согласно hitWeight (навык 0)', () => {
     const s = newTestGame(1)
-    const target = freshMonster(s, 'goblin')
+    const target = freshMonster(s, 'goblin_brute')
     const rng = createRng(77)
     const counts: Record<string, number> = {}
     const N = 40000
@@ -52,7 +52,7 @@ describe('выбор части тела', () => {
 
   it('навык смещает распределение к vital-частям', () => {
     const s = newTestGame(1)
-    const target = freshMonster(s, 'goblin')
+    const target = freshMonster(s, 'goblin_brute')
     const vitalShare = (skill: number): number => {
       const rng = createRng(5)
       let vital = 0
@@ -69,7 +69,7 @@ describe('выбор части тела', () => {
 describe('влияние ран по тегам', () => {
   it('искалеченная grasp-часть (основная рука) снижает точность — у игрока и у монстра', () => {
     const s = newTestGame(2)
-    const goblin = freshMonster(s, 'goblin')
+    const goblin = freshMonster(s, 'goblin_brute')
     const p = player(s)
     for (const [att, def] of [
       [p, goblin],
@@ -83,7 +83,7 @@ describe('влияние ран по тегам', () => {
 
   it('искалеченная stance-часть снижает уклонение — у игрока и у монстра', () => {
     const s = newTestGame(3)
-    const goblin = freshMonster(s, 'goblin')
+    const goblin = freshMonster(s, 'goblin_brute')
     const p = player(s)
     for (const [att, def, leg] of [
       [p, goblin, 'left_leg'],
@@ -97,7 +97,7 @@ describe('влияние ран по тегам', () => {
 
   it('искалеченные лапы с когтями ослабляют атаку когтями, но не укус', () => {
     const s = newTestGame(4)
-    const wolf = freshMonster(s, 'wolf')
+    const wolf = freshMonster(s, 'warg')
     const p = player(s)
     const claw0 = hitChance(ctxFor(wolf, p, 'claw'))
     const bite0 = hitChance(ctxFor(wolf, p, 'bite'))
@@ -109,7 +109,7 @@ describe('влияние ран по тегам', () => {
 
   it('четырёхрукий: потеря руки, не держащей оружие, не снижает точность', () => {
     const s = newTestGame(5, { bodyPlan: 'humanoid_fourarmed' })
-    const goblin = freshMonster(s, 'goblin')
+    const goblin = freshMonster(s, 'goblin_brute')
     const p = player(s)
     const before = hitChance(ctxFor(p, goblin))
     cripple(findPart(p, 'left_lower_arm')!)
@@ -136,7 +136,7 @@ describe('смерть', () => {
 
   it('при обнулении vital-части — даже при большом общем HP', () => {
     const s = newTestGame(7)
-    const goblin = freshMonster(s, 'goblin')
+    const goblin = freshMonster(s, 'goblin_brute')
     goblin.hp = goblin.maxHp = 10_000
     // Все части, кроме головы, «не попадаются».
     for (const part of goblin.parts) if (part.defId !== 'head') part.wound = 'severed'
@@ -147,7 +147,7 @@ describe('смерть', () => {
 
   it('при обнулении общего HP', () => {
     const s = newTestGame(8)
-    const goblin = freshMonster(s, 'goblin')
+    const goblin = freshMonster(s, 'goblin_brute')
     goblin.hp = 1
     for (const part of goblin.parts) if (part.defId !== 'left_arm') part.wound = 'severed'
     const ctx = hitUntil(s, player(s), goblin, () => !s.creatures[goblin.id])
@@ -170,13 +170,6 @@ describe('смерть', () => {
 })
 
 describe('монстры и ИИ', () => {
-  it('на каждом уровне 6–12+ монстров, на 3-м — орк-воин', () => {
-    const s = newTestGame(11)
-    const onLevel1 = Object.values(s.creatures).filter((c) => c.kind !== 'player' && c.depth === 1)
-    expect(onLevel1.length).toBeGreaterThanOrEqual(6)
-    expect(onLevel1.every((c) => MONSTERS[c.kind]!.depth[0] <= 1)).toBe(true)
-  })
-
   it('монстр, видящий игрока, подходит и атакует', () => {
     let s = newTestGame(12)
     for (const id of Object.keys(s.creatures)) if (id !== s.playerId) delete s.creatures[id]
@@ -196,7 +189,7 @@ describe('монстры и ИИ', () => {
       }
     }
     expect(spot).toBeDefined()
-    spawnMonster(s, 'goblin', 1, spot!.x, spot!.y)
+    spawnMonster(s, 'goblin_brute', 1, spot!.x, spot!.y)
     const events = []
     for (let i = 0; i < 10; i++) {
       const r = applyCommand(s, { type: 'wait' })
@@ -223,7 +216,7 @@ describe('монстры и ИИ', () => {
 
   it('раненые монстры с искалеченными ногами двигаются медленнее', async () => {
     const s = newTestGame(14)
-    const wolf = freshMonster(s, 'wolf')
+    const wolf = freshMonster(s, 'warg')
     const { actionCost } = await import('./time')
     const base = actionCost(wolf, 'move')
     for (const id of ['hind_left_leg', 'hind_right_leg']) cripple(findPart(wolf, id)!)

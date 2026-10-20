@@ -1,7 +1,7 @@
 // Расстановка монстров и предметов на новом уровне.
-import { FLOOR_ITEMS_PER_LEVEL, FLOOR_ITEM_WEIGHTS, MONSTERS, MONSTERS_PER_LEVEL } from '@gene/data'
+import { FLOOR_ITEMS_PER_LEVEL, FLOOR_ITEM_WEIGHTS, MONSTERS, MONSTERS_PER_LEVEL, factionForDepth } from '@gene/data'
 import { pick, randInt, shuffle, weightedIndex } from '../rng'
-import { DIRS, TILE, creatureAt, tileAt, type GameState, type Pos } from '../state'
+import { TILE, creatureAt, tileAt, type GameState, type Pos } from '../state'
 import { spawnMonster } from '../monsters'
 import { createItem } from '../items'
 import type { GeneratedLevel } from './mapgen'
@@ -16,40 +16,25 @@ export function populateLevel(state: GameState, gen: GeneratedLevel): void {
   // Первая комната (старт/лестница вверх) остаётся без монстров, чтобы игрока не атаковали сразу по прибытии.
   const candidates = shuffle(rng, gen.roomCells.slice(1).flat().filter(free))
 
-  // Финальный монстр 3-го уровня — в комнате портала.
-  if (gen.portal) {
-    const portalRoom = gen.roomCells[gen.roomCells.length - 1] ?? []
-    const spots = portalRoom.filter(free)
-    const boss = Object.values(MONSTERS).find((m) => m.boss)
-    if (boss && spots.length > 0) {
-      const spot = pick(rng, spots)
-      spawnMonster(state, boss.id, depth, spot.x, spot.y)
-    }
+  // Уровень целиком занимает одна фракция. Её вожак — в последней комнате (у лестницы вниз или портала).
+  const faction = factionForDepth(depth)
+  const species = Object.values(MONSTERS).filter((m) => m.faction === faction?.id)
+  const leader = species.find((m) => m.role === 'leader')
+  const lastRoom = (gen.roomCells[gen.roomCells.length - 1] ?? []).filter(free)
+  if (leader && lastRoom.length > 0) {
+    const spot = pick(rng, lastRoom)
+    spawnMonster(state, leader.id, depth, spot.x, spot.y)
   }
 
-  const pool = Object.values(MONSTERS).filter((m) => !m.boss && m.spawnWeight > 0 && depth >= m.depth[0] && depth <= m.depth[1])
+  const pool = species.filter((m) => m.role !== 'leader' && m.spawnWeight > 0)
   const target = randInt(rng, MONSTERS_PER_LEVEL[0], MONSTERS_PER_LEVEL[1])
   let placed = 0
-  while (placed < target && candidates.length > 0) {
-    const def = pool[weightedIndex(rng, pool.map((m) => m.spawnWeight))]
-    if (!def) break
+  while (placed < target && candidates.length > 0 && pool.length > 0) {
+    const def = pool[weightedIndex(rng, pool.map((m) => m.spawnWeight))]!
     const spot = candidates.pop()!
     if (!free(spot)) continue
     spawnMonster(state, def.id, depth, spot.x, spot.y)
     placed++
-    // Стая: остальные особи — на соседних клетках.
-    if (def.packSize) {
-      const extra = randInt(rng, def.packSize[0], def.packSize[1]) - 1
-      for (let i = 0; i < extra && placed < target + 2; i++) {
-        const near = Object.values(DIRS)
-          .map((d) => ({ x: spot.x + d.x, y: spot.y + d.y }))
-          .filter(free)
-        if (near.length === 0) break
-        const p = pick(rng, near)
-        spawnMonster(state, def.id, depth, p.x, p.y)
-        placed++
-      }
-    }
   }
 
   // Предметы на полу.

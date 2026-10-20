@@ -5,15 +5,17 @@ import { generateLevel } from './world/mapgen'
 import { createRng } from './rng'
 import { newTestGame, run, stairsPos, walkTo } from './testing'
 import { buildView } from './view'
+import { ensureLevel, findTile } from './world/level'
+import { FACTIONS, MONSTERS } from '@gene/data'
 
 describe('генерация уровней', () => {
   it('уровень 80×40, есть нужные лестницы и портал', () => {
-    for (const depth of [1, 2, 3]) {
+    for (const depth of [1, 2, 3, 4]) {
       const gen = generateLevel(createRng(depth * 77), depth)
       expect(gen.level.tiles.length).toBe(MAP_WIDTH * MAP_HEIGHT)
       expect(gen.level.tiles.includes(TILE.stairsUp)).toBe(depth > 1)
-      expect(gen.level.tiles.includes(TILE.stairsDown)).toBe(depth < 3)
-      expect(gen.level.tiles.includes(TILE.portal)).toBe(depth === 3)
+      expect(gen.level.tiles.includes(TILE.stairsDown)).toBe(depth < 4)
+      expect(gen.level.tiles.includes(TILE.portal)).toBe(depth === 4)
     }
   })
 
@@ -21,6 +23,34 @@ describe('генерация уровней', () => {
     const a = generateLevel(createRng(5), 1)
     const b = generateLevel(createRng(5), 1)
     expect(a.level.tiles).toBe(b.level.tiles)
+  })
+})
+
+describe('фракции на уровнях', () => {
+  const monstersOn = (s: ReturnType<typeof newTestGame>, depth: number) =>
+    Object.values(s.creatures).filter((c) => c.kind !== 'player' && c.depth === depth)
+
+  it('на уровне N только виды фракции уровня N и ровно один вожак у лестницы вниз / портала', () => {
+    for (const seed of [1, 2, 3, 4, 5]) {
+      const s = newTestGame(seed)
+      for (const depth of [1, 2, 3, 4]) {
+        ensureLevel(s, depth)
+        const monsters = monstersOn(s, depth)
+        expect(monsters.length).toBeGreaterThanOrEqual(6)
+        for (const c of monsters) expect(FACTIONS[MONSTERS[c.kind]!.faction].depth, c.kind).toBe(depth)
+        const leaders = monsters.filter((c) => MONSTERS[c.kind]!.role === 'leader')
+        expect(leaders).toHaveLength(1)
+        const exit = findTile(s, depth, depth === 4 ? TILE.portal : TILE.stairsDown)!
+        expect(Math.max(Math.abs(leaders[0]!.x - exit.x), Math.abs(leaders[0]!.y - exit.y))).toBeLessThanOrEqual(10)
+      }
+    }
+  })
+
+  it('портал на 4-м уровне сторожит драконорождённый', () => {
+    const s = newTestGame(9)
+    ensureLevel(s, 4)
+    expect(findTile(s, 4, TILE.portal)).toBeDefined()
+    expect(monstersOn(s, 4).filter((c) => MONSTERS[c.kind]!.role === 'leader').map((c) => c.kind)).toEqual(['dragonborn'])
   })
 })
 
@@ -105,7 +135,7 @@ describe('валидация команд', () => {
 })
 
 describe('уровни', () => {
-  it('спуск на 3 уровня, подъём обратно и вход в портал', () => {
+  it('спуск на 4 уровня, подъём обратно и вход в портал', () => {
     let s = newTestGame(2024)
     // Монстров убираем, чтобы проверять только перемещение.
     const clear = (): void => {
@@ -129,6 +159,10 @@ describe('уровни', () => {
     s = walkTo(s, stairsPos(s, TILE.stairsDown)).state
     s = applyCommand(s, { type: 'stairsDown' }).state
     expect(player(s).depth).toBe(3)
+    clear()
+    s = walkTo(s, stairsPos(s, TILE.stairsDown)).state
+    s = applyCommand(s, { type: 'stairsDown' }).state
+    expect(player(s).depth).toBe(4)
     clear()
     s = walkTo(s, stairsPos(s, TILE.portal)).state
     const won = applyCommand(s, { type: 'stairsDown' })
