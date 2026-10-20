@@ -12,6 +12,8 @@ export interface ActorRef {
 export type AttackRef =
   | { kind: 'weapon'; itemDefId: string; damageType: DamageType }
   | { kind: 'natural'; attackId: string; damageType: DamageType }
+  /** Выстрел или бросок: itemDefId — оружие, projectileDefId — боеприпас или само метательное оружие. */
+  | { kind: 'ranged'; itemDefId: string; projectileDefId: string; damageType: DamageType }
 
 export type HitSeverity = 'absorbed' | 'light' | 'medium' | 'heavy'
 
@@ -70,6 +72,10 @@ export type GameEvent =
       partId?: string
     }
   | { type: 'monsterFlees'; creature: ActorRef }
+  | { type: 'shotFired'; attacker: ActorRef; weaponDefId: string; projectileDefId: string }
+  | { type: 'projectileBroken'; projectileDefId: string }
+  /** Снаряд никого не задел: упал на пол или ударился в стену. */
+  | { type: 'projectileLanded'; projectileDefId: string; wall: boolean }
   | { type: 'itemsHere'; itemDefIds: string[] }
   | { type: 'itemPickedUp'; itemDefId: string; count: number }
   | { type: 'itemDropped'; itemDefId: string; count: number; owner: ActorRef }

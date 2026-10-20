@@ -17,12 +17,14 @@ import SkillsModal from './components/SkillsModal.vue'
 import HelpModal from './components/HelpModal.vue'
 import InspectPanel from './components/InspectPanel.vue'
 import { DIR_DELTAS as DIRS } from './input'
+import { cancelAim, confirmAim, cycleAim, moveAim, startAim } from './aim'
 
 function onHover(pos: { x: number; y: number } | null): void {
-  if (!store.lookMode) store.inspect = pos
+  if (!store.lookMode && !store.aim) store.inspect = pos
 }
 
 function onPick(pos: { x: number; y: number }): void {
+  if (store.aim) store.aim = pos
   store.inspect = pos
 }
 
@@ -33,7 +35,7 @@ function onKey(ev: KeyboardEvent): void {
   const target = ev.target as HTMLElement | null
   if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return
   // Любая клавиша во время анимации доматывает её; сама клавиша не выполняется.
-  if (store.anim) {
+  if (store.anim || store.projectile) {
     if (!ev.repeat && !MODIFIER_KEYS.has(ev.key)) skipAnimation()
     ev.preventDefault()
     return
@@ -48,7 +50,18 @@ function onKey(ev: KeyboardEvent): void {
   }
   const action = keyAction(ev)
   if (!action) return
+  // Tab и Enter нужны только прицелу; иначе остаются браузеру.
+  if (!store.aim && (action.kind === 'nextTarget' || action.kind === 'confirm')) return
   ev.preventDefault()
+
+  // Прицел: стрелки двигают курсор, Tab — следующая цель, Enter/f — выстрел, Esc — отмена.
+  if (store.aim) {
+    if (action.kind === 'dir') moveAim(DIRS[action.dir])
+    else if (action.kind === 'nextTarget') cycleAim(action.back)
+    else if (action.kind === 'fire' || action.kind === 'confirm') confirmAim()
+    else if (action.kind === 'escape') cancelAim()
+    return
+  }
 
   // Режим осмотра: направления двигают курсор, x/Esc — выход.
   if (store.lookMode) {
@@ -77,6 +90,9 @@ function onKey(ev: KeyboardEvent): void {
         store.lookMode = true
         store.inspect = { x: store.view.player.x, y: store.view.player.y }
       }
+      break
+    case 'fire':
+      startAim()
       break
     case 'command':
       sendCommand(action.cmd)

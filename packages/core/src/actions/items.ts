@@ -106,6 +106,8 @@ export function useAction(ctx: Ctx, itemId: string, targetPartId?: string, targe
   if (!def || def.category !== 'consumable') return reject('notUsable')
 
   switch (def.effect) {
+    case 'ammo':
+      return reject('notUsable')
     case 'bandage': {
       if (targetPartId === undefined) return reject('needTarget')
       const part = findPart(p, targetPartId)

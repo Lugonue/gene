@@ -157,6 +157,7 @@ export type Command =
   | { type: 'unequip'; slot: SlotId }
   | { type: 'use'; itemId: string; targetPartId?: string; targetItemId?: string }
   | { type: 'disassemble'; itemId: string }
+  | { type: 'fire'; x: number; y: number }
   | { type: 'stairsDown' }
   | { type: 'stairsUp' }
 

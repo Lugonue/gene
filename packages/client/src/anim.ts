@@ -1,6 +1,8 @@
 // Анимация многоходовых действий (автоисследование, бег): проигрывает кадры с сервера,
-// постепенно проявляя память карты, затем применяет итоговый вид.
-import type { MoveFrame } from '@gene/core'
+// постепенно проявляя память карты, затем применяет итоговый вид. Так же, по клетке за кадр,
+// пролетают снаряды — поверх карты до хода.
+import { ITEMS } from '@gene/data'
+import type { MoveFrame, ProjectileTrail } from '@gene/core'
 import { store } from './store'
 
 const STEP_MS = 25
@@ -45,11 +47,48 @@ export function playFrames(frames: MoveFrame[], onDone: () => void): void {
   timer = setInterval(step, STEP_MS)
 }
 
+/** Черта по направлению полёта; камень и прочее со своим символом — им. */
+function projectileGlyph(trail: ProjectileTrail, width: number): string {
+  const def = ITEMS[trail.itemDefId]
+  if (def?.category === 'consumable' && def.projectileGlyph) return def.projectileGlyph
+  const a = trail.cells[0]!
+  const b = trail.cells[trail.cells.length - 1]!
+  const dx = Math.sign((b % width) - (a % width))
+  const dy = Math.sign(Math.floor(b / width) - Math.floor(a / width))
+  if (dy === 0) return '-'
+  if (dx === 0) return '|'
+  return dx === dy ? '\\' : '/'
+}
+
+export function playProjectiles(trails: ProjectileTrail[], onDone: () => void): void {
+  const view = store.view
+  if (!view) return onDone()
+  const { width } = view.map
+  const steps = trails.flatMap((t) => {
+    const glyph = projectileGlyph(t, width)
+    const color = ITEMS[t.itemDefId]?.color ?? '#ffffff'
+    return t.cells.map((i) => ({ x: i % width, y: Math.floor(i / width), glyph, color }))
+  })
+  let i = 0
+  finish = onDone
+  const step = (): void => {
+    const s = steps[i++]
+    if (!s) {
+      skipAnimation()
+      return
+    }
+    store.projectile = s
+  }
+  step()
+  timer = setInterval(step, STEP_MS)
+}
+
 /** Сразу закончить анимацию и применить итоговый вид (если анимация шла). */
 export function skipAnimation(): void {
   if (timer) clearInterval(timer)
   timer = null
   store.anim = null
+  store.projectile = null
   const done = finish
   finish = null
   done?.()

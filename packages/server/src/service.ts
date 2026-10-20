@@ -52,6 +52,7 @@ const COMMAND_TYPES = new Set([
   'unequip',
   'use',
   'disassemble',
+  'fire',
   'stairsDown',
   'stairsUp',
 ])
@@ -188,7 +189,14 @@ export class GameService {
 
     const over = game.state.status !== 'active'
     if (over || game.sinceSnapshot >= this.snapshotEvery) this.snapshot(game)
-    conn.send({ type: 'view', seq, view: buildView(game.state), messages, ...(r.frames ? { frames: r.frames } : {}) })
+    conn.send({
+      type: 'view',
+      seq,
+      view: buildView(game.state),
+      messages,
+      ...(r.frames ? { frames: r.frames } : {}),
+      ...(r.projectiles ? { projectiles: r.projectiles } : {}),
+    })
     if (over) {
       conn.send({ type: 'gameOver', summary: summarize(game.state, game.log) })
       this.games.delete(game.token)

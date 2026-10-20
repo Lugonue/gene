@@ -26,3 +26,5 @@ Blocked by: 01
 - Тесты: двуручный штраф, поломка и подбор боеприпаса, стрелок не стреляет через союзника и отступает от игрока.
 
 ## Comments
+
+- 2026-10-20: реализовано (`core/src/combat/ranged.ts` — готовность, путь `projectilePath`, `fire`; команда `fire` в `actions/fire.ts`; ИИ стрелка в `ai.ts`; прицел `client/src/aim.ts`). Для задачи 05 готовы к переиспользованию `projectilePath` и `firstCreatureOnPath`; `recordTrail` (анимация) и `hasLineOfFire` из `ai.ts` (не стрелять через союзника) нужно будет экспортировать, а `ProjectileTrail.itemDefId` обобщить — клиент берёт символ и цвет снаряда из `ITEMS`, у заклинаний своих записей там нет. `fire()` завязан на оружие (`ShotReady`).

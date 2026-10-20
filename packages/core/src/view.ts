@@ -77,6 +77,11 @@ export interface ItemStatsView {
   maxDurability?: string
   damageType?: string
   skill?: string
+  /** Дальность оружия дальнего боя. */
+  range?: string
+  /** Боеприпас (название) для метателя снарядов. */
+  ammo?: string
+  twoHanded?: boolean
 }
 
 export interface ItemView {
@@ -234,6 +239,12 @@ export function itemView(state: GameState, inst: ItemInstance, owner?: Creature)
     view.stats.damage = status === 'known' ? String(def.damage) : status === 'partial' ? range(def.damage) : hidden
     view.stats.accuracy =
       status === 'known' ? signed(def.accuracy) : status === 'partial' ? `~${signed(def.accuracy)}` : hidden
+    if (def.ranged) {
+      view.stats.range = String(def.ranged.range)
+      const ammo = def.ranged.ammo ? ITEMS[def.ranged.ammo] : undefined
+      if (ammo) view.stats.ammo = ammo.name.nom
+    }
+    if (def.twoHanded) view.stats.twoHanded = true
   } else {
     view.stats.skill = SKILLS[def.skill].name
     view.stats.absorb = status === 'known' ? String(def.absorb) : status === 'partial' ? range(def.absorb) : hidden

@@ -1,7 +1,7 @@
 // WebSocket-соединение с сервером: токен в localStorage, переподключение, блокировка ввода до ответа.
 import type { ClientMsg, Command, ServerMsg } from '@gene/core'
 import { pushLog, pushWarning, store } from './store'
-import { playFrames, skipAnimation } from './anim'
+import { playFrames, playProjectiles, skipAnimation } from './anim'
 
 const TOKEN_KEY = 'gene.token'
 
@@ -65,6 +65,7 @@ function handle(msg: ServerMsg): void {
       }
       if (store.pending !== null && msg.seq === store.pending) store.pending = null
       if (msg.frames && msg.frames.length > 1 && store.view) playFrames(msg.frames, apply)
+      else if (msg.projectiles && store.view) playProjectiles(msg.projectiles, apply)
       else apply()
       break
     }

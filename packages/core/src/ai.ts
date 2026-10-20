@@ -1,4 +1,5 @@
 // Простой ИИ монстров: видит игрока — идёт к нему (A*) и атакует; ранен — может отступать; иначе бродит.
+// Стрелки держат дистанцию и стреляют, когда есть линия огня.
 import * as ROT from 'rot-js'
 import { FACTIONS, MONSTERS, type FactionTrait } from '@gene/data'
 import type { Ctx } from './context'
@@ -9,6 +10,7 @@ import { actorRef, resolveAttack } from './combat/attack'
 import { planOf } from './body'
 import { chance, pick } from './rng'
 import { computeFov } from './world/fov'
+import { distance, fire, firstCreatureOnPath, projectilePath, readyToShoot, type ShotReady } from './combat/ranged'
 
 export function monsterTurn(ctx: Ctx, c: Creature): void {
   const { state } = ctx
@@ -52,6 +54,11 @@ export function monsterTurn(ctx: Ctx, c: Creature): void {
     if (step) return moveTo(ctx, c, step)
     if (adjacent) return attack(ctx, c, p) // загнан в угол
     return rest(c)
+  }
+
+  if (sees) {
+    const ready = readyToShoot(state, c)
+    if (typeof ready !== 'string') return shooterTurn(ctx, c, p, ready)
   }
 
   if (adjacent) return attack(ctx, c, p)
@@ -134,6 +141,35 @@ function fleeStep(ctx: Ctx, c: Creature, from: Pos): Pos | undefined {
   return best
 }
 
+/**
+ * Ход стрелка, видящего цель: рядом — отходит (зажатый в угол бьёт в ближнем бою); есть линия огня — стреляет;
+ * иначе переходит на соседнюю клетку с линией огня или подходит, не вставая вплотную.
+ */
+function shooterTurn(ctx: Ctx, c: Creature, target: Creature, ready: ShotReady): void {
+  if (distance(c, target) <= 1) {
+    const step = fleeStep(ctx, c, target)
+    return step ? moveTo(ctx, c, step) : attack(ctx, c, target)
+  }
+  if (hasLineOfFire(ctx, c, c, target, ready.range)) {
+    fire(ctx, c, target, ready)
+    return spendTime(c, actionCost(c, 'attack'))
+  }
+  const spot = Object.values(DIRS)
+    .map((d) => ({ x: c.x + d.x, y: c.y + d.y }))
+    .find((q) => canEnter(ctx, c, q) && distance(q, target) > 1 && hasLineOfFire(ctx, c, q, target, ready.range))
+  if (spot) return moveTo(ctx, c, spot)
+  const step = pathStep(ctx, c, target)
+  if (step && distance(step, target) > 1) return moveTo(ctx, c, step)
+  rest(c)
+}
+
+/** Из клетки from снаряд стрелка c долетает до цели, ни в кого не попав по дороге. */
+function hasLineOfFire(ctx: Ctx, c: Creature, from: Pos, target: Creature, range: number): boolean {
+  if (distance(from, target) > range) return false
+  const path = projectilePath(ctx.state.levels[c.depth]!, from, target, range)
+  return firstCreatureOnPath(ctx.state, c.depth, path, c.id)?.creature.id === target.id
+}
+
 function moveTo(ctx: Ctx, c: Creature, q: Pos): void {
   const level = ctx.state.levels[c.depth]!
   if (tileAt(level, q.x, q.y) === TILE.doorClosed) {
@@ -157,10 +193,6 @@ function rest(c: Creature): void {
 function factionTrait(c: Creature): FactionTrait | undefined {
   const def = MONSTERS[c.kind]
   return def ? FACTIONS[def.faction].trait : undefined
-}
-
-function distance(a: Pos, b: Pos): number {
-  return Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y))
 }
 
 /** Ближайший монстр той же фракции на уровне. */

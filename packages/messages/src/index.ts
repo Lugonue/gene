@@ -117,16 +117,18 @@ function itemWords(defId: string): WordForms {
   return def.name
 }
 
+/** Чем нанесён удар: оружие, снаряд или естественная атака. */
 function attackWords(attack: AttackRef): WordForms {
   if (attack.kind === 'weapon') return itemWords(attack.itemDefId)
+  if (attack.kind === 'ranged') return itemWords(attack.projectileDefId)
   const def = ATTACKS[attack.attackId]
   if (!def) throw new Error(`messages: неизвестная атака ${attack.attackId}`)
   return def.name
 }
 
-/** Семейство шаблонов атаки: weapon, bite, claws, fist. */
+/** Семейство шаблонов атаки: weapon, ranged, bite, claws, fist. */
 export function attackFamily(attack: AttackRef): string {
-  if (attack.kind === 'weapon') return 'weapon'
+  if (attack.kind === 'weapon' || attack.kind === 'ranged') return attack.kind
   const tag = ATTACKS[attack.attackId]?.partTag
   return tag === 'bite' ? 'bite' : tag === 'claw' ? 'claws' : 'fist'
 }
@@ -278,6 +280,31 @@ export function renderEvents(events: GameEvent[], viewerId: string, opts: Render
       case 'monsterFlees': {
         const b: Bindings = { subject: 'creature', roles: { creature: creatureRole(e.creature, viewerId) } }
         push(msg(choose(rng, [e.type], b), turn, 'narrative'))
+        break
+      }
+
+      case 'shotFired': {
+        const b: Bindings = {
+          subject: 'attacker',
+          roles: {
+            attacker: creatureRole(e.attacker, viewerId),
+            weapon: { words: itemWords(e.weaponDefId), person: 3 },
+            projectile: { words: itemWords(e.projectileDefId), person: 3 },
+          },
+        }
+        const how = e.projectileDefId === e.weaponDefId ? 'thrown' : 'launcher'
+        push(msg(choose(rng, [`shotFired.${how}`], b), turn, 'narrative'))
+        break
+      }
+
+      case 'projectileBroken':
+      case 'projectileLanded': {
+        const b: Bindings = { roles: { projectile: { words: itemWords(e.projectileDefId), person: 3 } } }
+        const keys =
+          e.type === 'projectileBroken'
+            ? [`projectileBroken.${e.projectileDefId}`, 'projectileBroken']
+            : [`projectileLanded.${e.wall ? 'wall' : 'floor'}`]
+        push(msg(choose(rng, keys, b), turn, 'narrative'))
         break
       }
 

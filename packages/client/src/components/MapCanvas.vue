@@ -3,6 +3,7 @@
 import { onMounted, ref, watch } from 'vue'
 import { store } from '../store'
 import { PLAYER_COLOR, TILE_COLORS } from '../colors'
+import { aimPath, heldRangedWeapon } from '../aim'
 
 const CELL_W = 12
 const CELL_H = 18
@@ -74,8 +75,21 @@ function draw(): void {
   g.fillRect(p.x * CELL_W, p.y * CELL_H, CELL_W, CELL_H)
   glyph(p.x, p.y, '@', PLAYER_COLOR)
 
+  if (store.aim) {
+    const range = heldRangedWeapon(view)?.ranged?.range ?? 0
+    g.fillStyle = 'rgba(255, 90, 60, 0.25)'
+    for (const q of aimPath(view, store.aim, range)) g.fillRect(q.x * CELL_W, q.y * CELL_H, CELL_W, CELL_H)
+  }
+
+  if (store.projectile) {
+    const s = store.projectile
+    g.fillStyle = '#000'
+    g.fillRect(s.x * CELL_W, s.y * CELL_H, CELL_W, CELL_H)
+    glyph(s.x, s.y, s.glyph, s.color)
+  }
+
   if (store.inspect) {
-    g.strokeStyle = '#ffd24a'
+    g.strokeStyle = store.aim ? '#ff5a3c' : '#ffd24a'
     g.lineWidth = 1
     g.strokeRect(store.inspect.x * CELL_W + 0.5, store.inspect.y * CELL_H + 0.5, CELL_W - 1, CELL_H - 1)
   }
@@ -93,7 +107,7 @@ function cellFromEvent(ev: MouseEvent): { x: number; y: number } | null {
 }
 
 onMounted(draw)
-watch(() => [store.view, store.inspect, store.anim], draw, { deep: false })
+watch(() => [store.view, store.inspect, store.anim, store.aim, store.projectile], draw, { deep: false })
 </script>
 
 <template>

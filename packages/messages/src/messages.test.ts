@@ -242,3 +242,64 @@ describe('сообщения автоисследования и бега', () =
     expect(out[0]!.text).toContain('(×2)')
   })
 })
+
+describe('сообщения дальнего боя', () => {
+  const RANGED = WEAPONS.filter((w) => w.category === 'weapon' && w.ranged)
+  const shots: AttackRef[] = RANGED.map((w) => {
+    if (w.category !== 'weapon') throw new Error()
+    return { kind: 'ranged', itemDefId: w.id, projectileDefId: w.ranged!.ammo ?? w.id, damageType: w.damageType }
+  })
+
+  it('выстрел, попадание, промах, поломка и падение снаряда — без плейсхолдеров, в обе стороны', () => {
+    for (const kind of Object.keys(MONSTERS)) {
+      for (const attack of shots) {
+        if (attack.kind !== 'ranged') continue
+        const events: GameEvent[] = [
+          { type: 'shotFired', attacker: mon(kind), weaponDefId: attack.itemDefId, projectileDefId: attack.projectileDefId },
+          { type: 'shotFired', attacker: PLAYER, weaponDefId: attack.itemDefId, projectileDefId: attack.projectileDefId },
+          { type: 'projectileBroken', projectileDefId: attack.projectileDefId },
+          { type: 'projectileLanded', projectileDefId: attack.projectileDefId, wall: true },
+          { type: 'projectileLanded', projectileDefId: attack.projectileDefId, wall: false },
+        ]
+        expectClean(events)
+        for (const part of BODY_PLANS.humanoid!.parts) expectClean(combatEvents(mon(kind), PLAYER, attack, part.id, 'bionic'))
+        for (const part of BODY_PLANS[MONSTERS[kind]!.bodyPlan]!.parts)
+          expectClean(combatEvents(PLAYER, mon(kind), attack, part.id, 'organic'))
+      }
+    }
+  })
+
+  it('минимум 2 варианта попадания на каждую тяжесть', () => {
+    expect(TEMPLATES['miss.ranged']!.length).toBeGreaterThanOrEqual(2)
+    for (const type of new Set(RANGED.map((w) => w.category === 'weapon' && w.damageType)))
+      for (const sev of ['light', 'medium', 'heavy'])
+        expect(TEMPLATES[`hit.ranged.${type}.${sev}`]!.length).toBeGreaterThanOrEqual(2)
+  })
+
+  it('контрольные примеры', () => {
+    const text = (e: GameEvent): string => renderEvents([e], 'p')[0]!.text
+    expect(text({ type: 'shotFired', attacker: mon('orc_archer'), weaponDefId: 'bow', projectileDefId: 'arrow' })).toBe(
+      'Орк-лучник стреляет из лука.',
+    )
+    expect(text({ type: 'shotFired', attacker: PLAYER, weaponDefId: 'javelin', projectileDefId: 'javelin' })).toBe(
+      'Ты метаешь метательное копьё.',
+    )
+    expect(text({ type: 'projectileBroken', projectileDefId: 'arrow' })).toBe('Стрела ломается.')
+    expect(text({ type: 'projectileBroken', projectileDefId: 'stone' })).toBe('Камень раскалывается.')
+    expect(text({ type: 'projectileLanded', projectileDefId: 'bolt', wall: true })).toBe('Болт ударяется о стену.')
+    const hit = text({
+      type: 'attackHit',
+      attacker: mon('orc_archer'),
+      target: PLAYER,
+      attack: { kind: 'ranged', itemDefId: 'bow', projectileDefId: 'arrow', damageType: 'pierce' },
+      partId: 'left_arm',
+      partMaterial: 'organic',
+      damage: 3,
+      absorbed: 0,
+      severity: 'medium',
+    })
+    expect(hit).toMatch(/^Стрела /)
+    expect(hit).toContain('лев')
+  })
+})
+

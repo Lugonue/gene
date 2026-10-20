@@ -3,7 +3,7 @@
 import type { BodyPartDef, DamageType, FactionTrait, Material, PartTag, SkillId, WoundStage } from '@gene/data'
 import { nextFloat, randInt, chance as roll, weightedIndex, type RngState } from '../../rng'
 import type { BionicUpgrades, BodyPartState, Creature, ItemInstance, StudyStatus } from '../../state'
-import { mainHand, partDef, partsWithTag } from '../../body'
+import { mainHand, offHand, partDef, partsWithTag } from '../../body'
 
 // ---------------------------------------------------------------------------
 // Контекст атаки
@@ -20,6 +20,8 @@ export interface AttackProfile {
   partTag: 'grasp' | 'bite' | 'claw'
   /** Экземпляр оружия, если атака оружием. */
   weapon?: ItemInstance
+  /** Двуручное оружие: точность зависит и от второй руки. */
+  twoHanded?: boolean
 }
 
 export interface AttackContext {
@@ -75,6 +77,8 @@ function minHpForStage(part: BodyPartState, stage: WoundStage): number {
 
 const STAGE_MUL: Record<WoundStage, number> = { none: 1, bruised: 0.9, wounded: 0.75, crippled: 0.5, severed: 0.3 }
 const VISION_ACC_MUL: Record<WoundStage, number> = { none: 1, bruised: 0.95, wounded: 0.85, crippled: 0.7, severed: 0.6 }
+/** Вторая рука двуручного оружия; без второй руки — как отсечённая. */
+const OFF_HAND_ACC_MUL: Record<WoundStage, number> = { none: 1, bruised: 0.95, wounded: 0.85, crippled: 0.6, severed: 0.4 }
 const VISION_FOV_DELTA: Record<WoundStage, number> = { none: 0, bruised: -1, wounded: -2, crippled: -4, severed: -5 }
 
 function avgMul(parts: BodyPartState[], table: Record<WoundStage, number>): number {
@@ -179,6 +183,7 @@ export function hitChance(ctx: AttackContext): number {
   const precision = upgradeSum(attackingParts(ctx.attacker, ctx.attack.partTag), 'precision')
   let acc = 10 + ctx.attack.accuracy + 1.5 * ctx.attackerSkill + 0.5 * ctx.attackerFighting + precision
   acc *= mods.accuracyMul
+  if (ctx.attack.twoHanded) acc *= OFF_HAND_ACC_MUL[offHand(ctx.attacker)?.wound ?? 'severed']
   if (ctx.attack.weapon) acc *= 0.6 + 0.4 * durabilityEfficiency(ctx.attack.weapon)
   const targetMods = woundModifiers(ctx.target)
   const mobility = upgradeSum(partsWithTag(ctx.target, 'stance'), 'mobility')
@@ -230,6 +235,17 @@ export function hitSeverity(damage: number, part: BodyPartState): 'absorbed' | '
 /** Как урон распределяется между частью тела и общим пулом HP. */
 export function splitDamage(damage: number): { part: number; total: number } {
   return { part: damage, total: damage }
+}
+
+// ---------------------------------------------------------------------------
+// Дальний бой
+// ---------------------------------------------------------------------------
+
+/** Промахнувшийся снаряд падает мягче и ломается реже. */
+const MISS_BREAK_MUL = 0.5
+
+export function projectileBreaks(rng: RngState, breakChance: number, hit: boolean): boolean {
+  return roll(rng, hit ? breakChance : breakChance * MISS_BREAK_MUL)
 }
 
 // ---------------------------------------------------------------------------

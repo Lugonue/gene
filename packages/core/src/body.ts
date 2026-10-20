@@ -16,7 +16,7 @@ import {
   type WeaponDef,
 } from '@gene/data'
 import type { BodyPartState, Creature, GameState, ItemInstance } from './state'
-import { skillLevelFromXp } from './combat/formulas'
+import { skillLevelFromXp, stageIndex } from './combat/formulas'
 
 export function planOf(c: Creature): BodyPlanDef {
   const plan = BODY_PLANS[c.bodyPlan]
@@ -41,6 +41,17 @@ export function partsWithTag(c: Creature, tag: PartTag): BodyPartState[] {
 export function mainHand(c: Creature): BodyPartState | undefined {
   const id = planOf(c).mainHand
   return id ? findPart(c, id) : undefined
+}
+
+/** Вторая рука для двуручного оружия: наименее раненая хватательная часть, кроме основной руки. */
+export function offHand(c: Creature): BodyPartState | undefined {
+  const main = mainHand(c)
+  let best: BodyPartState | undefined
+  for (const p of partsWithTag(c, 'grasp')) {
+    if (p === main) continue
+    if (!best || stageIndex(p.wound) < stageIndex(best.wound)) best = p
+  }
+  return best
 }
 
 /** Слоты, доступные существу: оружие (если есть хватательные части) + слоты брони из плана тела. */

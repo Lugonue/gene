@@ -130,10 +130,17 @@ export interface RoleGearDef {
   armourChance: number
 }
 
+/** Запас стрелка: боеприпасы к метателю или число метательных копий (вместе с тем, что в руке). */
+export interface RangedSupplyDef {
+  ammo: [number, number]
+  thrown: [number, number]
+}
+
 // ---------- Предметы ----------
 
 export type ItemCategory = 'weapon' | 'armour' | 'consumable'
-export type ConsumableEffect = 'bandage' | 'healPotion' | 'repairKit'
+/** ammo — боеприпас: не применяется, тратится при выстреле. */
+export type ConsumableEffect = 'bandage' | 'healPotion' | 'repairKit' | 'ammo'
 
 interface ItemDefBase {
   id: string
@@ -150,6 +157,17 @@ export interface WeaponDef extends ItemDefBase {
   damageType: DamageType
   skill: SkillId
   maxDurability: number
+  /** Двуручное: вторая рука нужна для точности. */
+  twoHanded?: boolean
+  /** Дальний бой. */
+  ranged?: RangedDef
+}
+
+export interface RangedDef {
+  /** Дальность (клетки, по Чебышёву). */
+  range: number
+  /** Тип боеприпаса; без него оружие бросается само (метательное). Метатель снарядов в ближнем бою бьёт кулаком. */
+  ammo?: string
 }
 
 export interface ArmourDef extends ItemDefBase {
@@ -163,6 +181,10 @@ export interface ArmourDef extends ItemDefBase {
 export interface ConsumableDef extends ItemDefBase {
   category: 'consumable'
   effect: ConsumableEffect
+  /** Боеприпас: шанс сломаться при попадании. */
+  breakChance?: number
+  /** Символ снаряда в полёте; без него — черта по направлению полёта. */
+  projectileGlyph?: string
 }
 
 export type ItemDef = WeaponDef | ArmourDef | ConsumableDef
@@ -187,6 +209,10 @@ export type RejectReasonKey =
   | 'notUsable'
   | 'equippedItem'
   | 'nothingToExplore'
+  | 'noRangedWeapon'
+  | 'noAmmo'
+  | 'weaponBroken'
+  | 'outOfRange'
 
 // ---------- Навыки ----------
 
@@ -196,6 +222,10 @@ export type SkillId =
   | 'maces'
   | 'axes'
   | 'staves'
+  | 'bows'
+  | 'crossbows'
+  | 'slings'
+  | 'throwing'
   | 'unarmed'
   | 'light_armour'
   | 'heavy_armour'

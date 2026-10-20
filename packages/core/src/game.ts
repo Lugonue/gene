@@ -6,10 +6,11 @@ import { DIRS, creatureAt, player, tileAt, type Command, type Dir, type GameStat
 import { actionCost, nextActor, spendTime } from './time'
 import { monsterTurn } from './ai'
 import { moveAction, stairsAction } from './actions/move'
+import { fireAction } from './actions/fire'
 import { computeFov, isPassable, rememberVisible } from './world/fov'
 import { exploreStep } from './world/explore'
 import { noticeObjects } from './world/notice'
-import type { MoveFrame } from './protocol'
+import type { MoveFrame, ProjectileTrail } from './protocol'
 import { fovRadius, organicHealCap } from './combat/formulas'
 import { applyRegen } from './health'
 import { actorRef } from './combat/attack'
@@ -28,6 +29,8 @@ export interface CommandResult {
   events: GameEvent[]
   /** Кадры перемещения для анимации (автоисследование, бег). */
   frames?: MoveFrame[]
+  /** Полёты снарядов, видимые игроку. */
+  projectiles?: ProjectileTrail[]
 }
 
 /** Защита от бесконечного цикла мира (если вдруг что-то не тратит время). */
@@ -49,13 +52,20 @@ export function applyCommand(prev: GameState, cmd: Command): CommandResult {
   if (multi) {
     const res = multi(ctx, cmd)
     if (!res.ok) return { state: prev, events: [{ type: 'commandRejected', reason: res.reason }] }
-    return { state, events: ctx.events, ...(ctx.frames && ctx.frames.length > 0 ? { frames: ctx.frames } : {}) }
+    return { state, events: ctx.events, ...animation(ctx) }
   }
 
   const res = performPlayerAction(ctx, cmd)
   if (!res.ok) return { state: prev, events: [{ type: 'commandRejected', reason: res.reason }] }
   playerTurn(ctx, res.cost)
-  return { state, events: ctx.events }
+  return { state, events: ctx.events, ...animation(ctx) }
+}
+
+function animation(ctx: Ctx): Pick<CommandResult, 'frames' | 'projectiles'> {
+  return {
+    ...(ctx.frames && ctx.frames.length > 0 ? { frames: ctx.frames } : {}),
+    ...(ctx.projectiles && ctx.projectiles.length > 0 ? { projectiles: ctx.projectiles } : {}),
+  }
 }
 
 /** Завершение действия игрока: время, регенерация, ходы мира, наблюдение. */
@@ -96,6 +106,8 @@ function performPlayerAction(ctx: Ctx, cmd: Command): ActionResult {
       return useAction(ctx, cmd.itemId, cmd.targetPartId, cmd.targetItemId)
     case 'disassemble':
       return disassembleAction(ctx, cmd.itemId)
+    case 'fire':
+      return fireAction(ctx, cmd.x, cmd.y)
     default:
       return reject('invalid')
   }

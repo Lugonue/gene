@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { FACTIONS, ITEMS, MONSTERS } from '@gene/data'
+import { FACTIONS, ITEMS, MONSTERS, RANGED_SUPPLY } from '@gene/data'
 import { levelThreatBudget } from '../combat/formulas'
 import { createRng } from '../rng'
 import { planSquads, type SquadPlan } from './squads'
@@ -43,17 +43,26 @@ describe('отряды уровня', () => {
     expect(variants.size).toBe(8)
   })
 
-  it('снаряжение берётся из набора фракции по роли: маг с посохом, зверь без снаряжения', () => {
+  it('снаряжение берётся из набора фракции по роли: маг с посохом, стрелок с запасом, зверь без снаряжения', () => {
     for (let seed = 1; seed <= 30; seed++) {
       for (const depth of [1, 2, 3, 4]) {
         for (const m of planSquads(createRng(seed), depth).flatMap((q) => q.members)) {
           const def = MONSTERS[m.species]!
-          for (const id of m.gear) expect(FACTIONS[def.faction].gear, m.species).toContain(id)
+          for (const id of m.gear)
+            if (ITEMS[id]!.category !== 'consumable') expect(FACTIONS[def.faction].gear, m.species).toContain(id)
           const weapon = m.gear.find((id) => ITEMS[id]!.category === 'weapon')
           if (def.role === 'beast') expect(m.gear).toEqual([])
           if (def.role === 'mage') expect(weapon).toBe('staff')
           if (def.role === 'warrior' || def.role === 'leader') expect(weapon, m.species).toBeDefined()
           if (def.role !== 'mage') expect(weapon).not.toBe('staff')
+          if (def.role === 'archer') {
+            const w = ITEMS[weapon!]
+            const ranged = w?.category === 'weapon' ? w.ranged : undefined
+            expect(ranged, m.species).toBeDefined()
+            // Запас: боеприпасы к метателю или несколько метательных копий.
+            const supply = m.gear.filter((id) => id === (ranged!.ammo ?? weapon)).length
+            expect(supply, m.species).toBeGreaterThanOrEqual(ranged!.ammo ? RANGED_SUPPLY.ammo[0] : RANGED_SUPPLY.thrown[0])
+          }
         }
       }
     }

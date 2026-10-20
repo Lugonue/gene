@@ -43,6 +43,10 @@ export const store = reactive({
   lookMode: false,
   /** Кадр анимации многоходового действия (пока идёт — карта рисуется по нему, без монстров и предметов). */
   anim: null as AnimFrame | null,
+  /** Прицел (f): клетка под курсором. */
+  aim: null as { x: number; y: number } | null,
+  /** Снаряд в полёте (анимация выстрела поверх обычной карты). */
+  projectile: null as { x: number; y: number; glyph: string; color: string } | null,
 })
 
 export interface AnimFrame {

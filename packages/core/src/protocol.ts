@@ -22,6 +22,12 @@ export interface MoveFrame {
   tiles: string
 }
 
+/** Полёт снаряда, видимый игроку: клетки пути (индексы y*width+x) и тип снаряда. */
+export interface ProjectileTrail {
+  cells: number[]
+  itemDefId: string
+}
+
 export interface GameSummary {
   status: 'dead' | 'won'
   name: string
@@ -40,6 +46,14 @@ export type ClientMsg =
 
 export type ServerMsg =
   | { type: 'welcome'; token: string; hasActiveGame: boolean; lastSummary?: GameSummary }
-  | { type: 'view'; seq: number; view: PlayerView; messages: LogMessage[]; fresh?: boolean; frames?: MoveFrame[] }
+  | {
+      type: 'view'
+      seq: number
+      view: PlayerView
+      messages: LogMessage[]
+      fresh?: boolean
+      frames?: MoveFrame[]
+      projectiles?: ProjectileTrail[]
+    }
   | { type: 'gameOver'; summary: GameSummary }
   | { type: 'error'; message: string; seq?: number }

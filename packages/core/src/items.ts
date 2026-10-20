@@ -1,7 +1,7 @@
 // Экземпляры предметов: создание, перемещение между полом и носителем, стопки расходников.
 import { ITEMS } from '@gene/data'
 import { slotsForItem } from './body'
-import { newId, type Creature, type GameState, type ItemInstance, type ItemLocation } from './state'
+import { itemsAt, newId, type Creature, type GameState, type ItemInstance, type ItemLocation } from './state'
 
 export function createItem(state: GameState, defId: string, loc: ItemLocation, count = 1): ItemInstance {
   const def = ITEMS[defId]
@@ -55,6 +55,18 @@ export function removeFromOwner(state: GameState, owner: Creature, itemId: strin
 export function dropToFloor(state: GameState, owner: Creature, inst: ItemInstance): void {
   removeFromOwner(state, owner, inst.id)
   inst.loc = { kind: 'floor', depth: owner.depth, x: owner.x, y: owner.y }
+}
+
+/** Положить count предметов типа defId на пол; расходник добавляется к стопке, уже лежащей в клетке. */
+export function dropAt(state: GameState, defId: string, depth: number, x: number, y: number, count = 1): ItemInstance {
+  if (isStackable(defId)) {
+    const stack = itemsAt(state, depth, x, y).find((i) => i.defId === defId)
+    if (stack) {
+      stack.count = (stack.count ?? 1) + count
+      return stack
+    }
+  }
+  return createItem(state, defId, { kind: 'floor', depth, x, y }, count)
 }
 
 export function destroyItem(state: GameState, owner: Creature | undefined, inst: ItemInstance): void {

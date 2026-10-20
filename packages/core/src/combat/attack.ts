@@ -1,5 +1,5 @@
 // Разрешение одной атаки (порядок шагов — ТЗ 5.5). Все числа — в ./formulas.
-import { ATTACKS, MONSTERS, type NaturalAttackDef } from '@gene/data'
+import { ATTACKS, MONSTERS, type NaturalAttackDef, type WeaponDef } from '@gene/data'
 import type { Ctx } from '../context'
 import type { ActorRef, AttackRef } from '../events'
 import { pick } from '../rng'
@@ -29,19 +29,32 @@ export function actorRef(c: Creature): ActorRef {
   return { id: c.id, kind: c.kind }
 }
 
-/** Чем атакует существо: оружием в руке, кулаком (сломанное оружие или без оружия) или естественной атакой. */
-export function chooseAttack(ctx: Ctx, c: Creature): { profile: AttackProfile; ref: AttackRef } {
+export interface ChosenAttack {
+  profile: AttackProfile
+  ref: AttackRef
+}
+
+function weaponProfile(inst: ItemInstance, def: WeaponDef): AttackProfile {
+  return {
+    damage: def.damage,
+    accuracy: def.accuracy,
+    damageType: def.damageType,
+    skill: def.skill,
+    partTag: 'grasp',
+    weapon: inst,
+    ...(def.twoHanded ? { twoHanded: true } : {}),
+  }
+}
+
+/**
+ * Чем атакует существо в ближнем бою: оружием в руке, кулаком (сломанное оружие, метатель снарядов
+ * или без оружия) или естественной атакой.
+ */
+export function chooseAttack(ctx: Ctx, c: Creature): ChosenAttack {
   const weapon = equippedWeapon(ctx.state, c)
-  if (weapon && durabilityEfficiency(weapon.inst) > 0) {
+  if (weapon && durabilityEfficiency(weapon.inst) > 0 && !weapon.def.ranged?.ammo) {
     return {
-      profile: {
-        damage: weapon.def.damage,
-        accuracy: weapon.def.accuracy,
-        damageType: weapon.def.damageType,
-        skill: weapon.def.skill,
-        partTag: 'grasp',
-        weapon: weapon.inst,
-      },
+      profile: weaponProfile(weapon.inst, weapon.def),
       ref: { kind: 'weapon', itemDefId: weapon.def.id, damageType: weapon.def.damageType },
     }
   }
@@ -61,10 +74,24 @@ export function chooseAttack(ctx: Ctx, c: Creature): { profile: AttackProfile; r
   }
 }
 
-export function resolveAttack(ctx: Ctx, attacker: Creature, target: Creature): void {
+/** Выстрел или бросок оружием inst; projectileDefId — боеприпас или само метательное оружие. */
+export function rangedAttack(inst: ItemInstance, def: WeaponDef, projectileDefId: string): ChosenAttack {
+  return {
+    profile: weaponProfile(inst, def),
+    ref: { kind: 'ranged', itemDefId: def.id, projectileDefId, damageType: def.damageType },
+  }
+}
+
+/** Разрешить атаку (по умолчанию — ближний бой). Возвращает, было ли попадание. */
+export function resolveAttack(
+  ctx: Ctx,
+  attacker: Creature,
+  target: Creature,
+  chosen: ChosenAttack = chooseAttack(ctx, attacker),
+): boolean {
   const { state } = ctx
   const rng = state.rng
-  const { profile, ref } = chooseAttack(ctx, attacker)
+  const { profile, ref } = chosen
   const isPlayerAttacker = attacker.kind === 'player'
   const isPlayerTarget = target.kind === 'player'
 
@@ -96,7 +123,7 @@ export function resolveAttack(ctx: Ctx, attacker: Creature, target: Creature): v
   if (!hit) {
     ctx.events.push({ type: 'attackMissed', attacker: actorRef(attacker), target: actorRef(target), attack: ref, partId: part.defId })
     if (isPlayerTarget) gainSkillXp(ctx, 'dodging', SKILL_XP.dodge)
-    return
+    return false
   }
 
   // 4–5. Броня и урон.
@@ -159,6 +186,7 @@ export function resolveAttack(ctx: Ctx, attacker: Creature, target: Creature): v
   if (vitalDestroyed || target.hp <= 0) {
     killCreature(ctx, target, attacker, vitalDestroyed ? 'vital' : 'hp', vitalDestroyed ? part.defId : undefined)
   }
+  return true
 }
 
 /** Износ предмета; события — при падении ступени эффективности и при поломке. */

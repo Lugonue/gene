@@ -119,6 +119,36 @@ describe('влияние ран по тегам', () => {
     expect(hitChance(ctxFor(p, goblin))).toBeLessThan(before)
   })
 
+  it('двуручное оружие: искалеченная вторая рука снижает точность, одноручному она не мешает', () => {
+    const s = newTestGame(6)
+    const goblin = freshMonster(s, 'goblin_brute')
+    const p = player(s)
+    const twoHanded = (): AttackContext => {
+      const c = ctxFor(p, goblin)
+      return { ...c, attack: { ...c.attack, twoHanded: true } }
+    }
+    const one0 = hitChance(ctxFor(p, goblin))
+    const two0 = hitChance(twoHanded())
+    expect(two0).toBe(one0)
+    cripple(findPart(p, 'left_arm')!)
+    expect(hitChance(ctxFor(p, goblin))).toBe(one0)
+    expect(hitChance(twoHanded())).toBeLessThan(two0)
+  })
+
+  it('двуручное оружие у четырёхрукого: хватает любой здоровой второй руки', () => {
+    const s = newTestGame(7, { bodyPlan: 'humanoid_fourarmed' })
+    const goblin = freshMonster(s, 'goblin_brute')
+    const p = player(s)
+    const c = ctxFor(p, goblin)
+    const ctx: AttackContext = { ...c, attack: { ...c.attack, twoHanded: true } }
+    const before = hitChance(ctx)
+    cripple(findPart(p, 'left_upper_arm')!)
+    expect(hitChance(ctx)).toBe(before)
+    cripple(findPart(p, 'left_lower_arm')!)
+    cripple(findPart(p, 'right_lower_arm')!)
+    expect(hitChance(ctx)).toBeLessThan(before)
+  })
+
   it('ранение головы уменьшает радиус обзора', () => {
     const s = newTestGame(6)
     const before = buildView(s).player.fovRadius

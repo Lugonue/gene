@@ -4,9 +4,10 @@ import type { ItemView } from '@gene/core'
 import { sendCommand } from './net'
 import { store } from './store'
 
+/** Эффект применяемого расходника; у боеприпасов его нет — они тратятся при выстреле. */
 export function consumableEffect(item: ItemView): string | undefined {
   const def = ITEMS[item.defId]
-  return def?.category === 'consumable' ? def.effect : undefined
+  return def?.category === 'consumable' && def.effect !== 'ammo' ? def.effect : undefined
 }
 
 /** Применить предмет: зелье — сразу, бинт и ремкомплект — через выбор цели. */

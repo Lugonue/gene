@@ -8,7 +8,7 @@
 //
 // Роли: attacker, target, victim, creature — существа; part / tpart — часть тела (tpart — «чья»:
 // «твою левую руку» / «левую руку гоблина»); weapon / aweapon — оружие или естественная атака
-// (aweapon — атакующего); armour / tarmour — броня (tarmour — цели); item / oitem — предмет (oitem — владельца).
+// (aweapon — атакующего; в дальнем бою — снаряд); projectile — снаряд в сообщениях о выстреле; armour / tarmour — броня (tarmour — цели); item / oitem — предмет (oitem — владельца).
 // Также подставляются {label}, {material}, {pct}, {eff}, {skill}, {level}, {category}, {list}, {count}.
 
 import type { Case, Gender, RejectReasonKey } from './types'
@@ -65,6 +65,13 @@ export const VERBS: Record<string, [string, string, string]> = {
   искрить: ['искришь', 'искрит', 'искрят'],
   появляться: ['появляешься', 'появляется', 'появляются'],
   пятиться: ['пятишься', 'пятится', 'пятятся'],
+  стрелять: ['стреляешь', 'стреляет', 'стреляют'],
+  метать: ['метаешь', 'метает', 'метают'],
+  пролетать: ['пролетаешь', 'пролетает', 'пролетают'],
+  вонзаться: ['вонзаешься', 'вонзается', 'вонзаются'],
+  пробивать: ['пробиваешь', 'пробивает', 'пробивают'],
+  раскалываться: ['раскалываешься', 'раскалывается', 'раскалываются'],
+  ударяться: ['ударяешься', 'ударяется', 'ударяются'],
 }
 
 /** Краткие прилагательные и причастия по роду. */
@@ -93,7 +100,7 @@ export const MATERIAL_NAMES = { organic: 'органика', bionic: 'биони
 /**
  * Шаблоны по ключу. Ключ ищется от самого точного к общему:
  * hit.<семейство>.<тип урона>.<тяжесть>.<материал> → … → hit.<семейство> → hit.
- * Семейства атак: weapon (оружие), bite (укус), claws (когти), fist (кулак).
+ * Семейства атак: weapon (оружие), ranged (снаряд), bite (укус), claws (когти), fist (кулак).
  */
 export const TEMPLATES: Record<string, string[]> = {
   // ---------- Промахи ----------
@@ -111,6 +118,11 @@ export const TEMPLATES: Record<string, string[]> = {
     '{attacker.nom} {verb:размахиваться} {weapon.ins}, но не {verb:попадать}.',
     '{aweapon.nom} {verb:проноситься@weapon} мимо {target.gen}.',
     '{target.nom} {verb:уворачиваться@target} от {aweapon.gen}.',
+  ],
+  'miss.ranged': [
+    '{weapon.nom} {verb:пролетать@weapon} мимо {target.gen}.',
+    '{target.nom} {verb:уворачиваться@target} от {aweapon.gen}.',
+    '{aweapon.nom} {verb:пролетать@weapon} совсем рядом с {target.ins}.',
   ],
   'miss.bite': [
     '{attacker.nom} {verb:клацать} зубами, но {verb:промахиваться}.',
@@ -164,6 +176,33 @@ export const TEMPLATES: Record<string, string[]> = {
   'hit.weapon.blunt.heavy': [
     '{attacker.nom} со всего маху {verb:бить} {target.acc} {weapon.ins} по {part.dat}!',
     '{attacker.nom} {verb:обрушивать} {weapon.acc} на {tpart.acc}!',
+  ],
+
+  // ---------- Попадания снарядами (подлежащее — снаряд) ----------
+  'hit.ranged': ['{weapon.nom} {verb:попадать@weapon} {target.dat} в {part.acc}.'],
+  'hit.ranged.pierce.light': [
+    '{weapon.nom} {verb:задевать@weapon} {tpart.acc}.',
+    '{weapon.nom} {verb:царапать@weapon} {target.acc} по {part.dat}.',
+  ],
+  'hit.ranged.pierce.medium': [
+    '{weapon.nom} {verb:вонзаться@weapon} в {tpart.acc}.',
+    '{weapon.nom} {verb:попадать@weapon} {target.dat} в {part.acc}.',
+  ],
+  'hit.ranged.pierce.heavy': [
+    '{weapon.nom} глубоко {verb:вонзаться@weapon} в {tpart.acc}!',
+    '{weapon.nom} {verb:пробивать@weapon} {tpart.acc}!',
+  ],
+  'hit.ranged.blunt.light': [
+    '{weapon.nom} {verb:задевать@weapon} {tpart.acc}.',
+    '{weapon.nom} вскользь {verb:бить@weapon} {target.acc} по {part.dat}.',
+  ],
+  'hit.ranged.blunt.medium': [
+    '{weapon.nom} {verb:бить@weapon} {target.acc} по {part.dat}.',
+    '{weapon.nom} {verb:попадать@weapon} {target.dat} в {part.acc}.',
+  ],
+  'hit.ranged.blunt.heavy': [
+    '{weapon.nom} с силой {verb:бить@weapon} {target.acc} по {part.dat}!',
+    '{weapon.nom} со всего маху {verb:попадать@weapon} {target.dat} в {part.acc}!',
   ],
 
   // ---------- Естественные атаки ----------
@@ -249,6 +288,14 @@ export const TEMPLATES: Record<string, string[]> = {
   'itemBroken.player': ['[ДИАГНОСТИКА] {^item.nom}: {adj:сломан@item}. Эффективность 0%.'],
   'itemBroken.monster': ['{oitem.nom} {verb:ломаться@item}!'],
 
+  // ---------- Выстрелы ----------
+  'shotFired.launcher': ['{attacker.nom} {verb:стрелять} из {weapon.gen}.'],
+  'shotFired.thrown': ['{attacker.nom} {verb:метать} {projectile.acc}.'],
+  projectileBroken: ['{projectile.nom} {verb:ломаться@projectile}.'],
+  'projectileBroken.stone': ['{projectile.nom} {verb:раскалываться@projectile}.'],
+  'projectileLanded.wall': ['{projectile.nom} {verb:ударяться@projectile} о стену.'],
+  'projectileLanded.floor': ['{projectile.nom} {verb:падать@projectile} на пол.'],
+
   // ---------- Прочее ----------
   monsterNoticed: ['Ты замечаешь {creature.acc}.', 'Впереди {verb:появляться@creature} {creature.nom}.'],
   monsterFlees: ['{creature.nom} {verb:пытаться@creature} отступить.', '{creature.nom} {verb:пятиться@creature} назад.'],
@@ -305,4 +352,8 @@ export const REJECT_TEXT: Record<RejectReasonKey, string> = {
   notUsable: 'Это нельзя применить.',
   equippedItem: 'Сначала сними предмет.',
   nothingToExplore: 'Здесь больше нечего исследовать.',
+  noRangedWeapon: 'В руке нет оружия дальнего боя.',
+  noAmmo: 'Нет боеприпасов.',
+  weaponBroken: 'Оружие сломано.',
+  outOfRange: 'Цель слишком далеко.',
 }

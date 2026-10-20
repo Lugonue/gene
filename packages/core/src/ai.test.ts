@@ -1,29 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { applyCommand } from './game'
 import { spawnMonster } from './monsters'
-import { newTestGame } from './testing'
-import { TILE, player, type Creature, type GameState } from './state'
+import { arenaGame as arena } from './testing'
+import { player, type Creature, type GameState } from './state'
 import type { GameEvent } from './events'
-
-/** Партия на открытой арене: весь 1-й уровень — пол, монстров нет, игрок неуязвим и стоит в (20, 20). */
-function arena(seed = 1): GameState {
-  const s = newTestGame(seed)
-  for (const id of Object.keys(s.creatures)) if (id !== s.playerId) delete s.creatures[id]
-  const level = s.levels[1]!
-  const tiles = level.tiles.split('')
-  for (let y = 0; y < level.height; y++)
-    for (let x = 0; x < level.width; x++) {
-      const border = x === 0 || y === 0 || x === level.width - 1 || y === level.height - 1
-      tiles[y * level.width + x] = border ? TILE.wall : TILE.floor
-    }
-  level.tiles = tiles.join('')
-  const p = player(s)
-  p.x = 20
-  p.y = 20
-  p.hp = p.maxHp = 1_000_000
-  for (const part of p.parts) part.hp = part.maxHp = 1_000_000
-  return s
-}
 
 function waitTurns(s: GameState, n: number): { state: GameState; events: GameEvent[] } {
   const events: GameEvent[] = []

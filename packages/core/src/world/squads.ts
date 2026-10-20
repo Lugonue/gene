@@ -4,6 +4,7 @@ import {
   ITEMS,
   LEADER_RETINUE,
   MONSTERS,
+  RANGED_SUPPLY,
   ROLE_GEAR,
   SQUAD_SIZE,
   factionForDepth,
@@ -44,7 +45,10 @@ const MAX_MISSES = 20
 const isWeapon = (it: ItemDef | undefined): it is WeaponDef => it?.category === 'weapon'
 const isArmour = (it: ItemDef | undefined): it is ArmourDef => it?.category === 'armour'
 
-/** Случайное снаряжение монстра из набора его фракции: оружие по роли и броня с шансом роли. */
+/**
+ * Случайное снаряжение монстра из набора его фракции: оружие по роли (дальнобойное — с запасом
+ * боеприпасов или метательных копий) и броня с шансом роли.
+ */
 export function rollGear(rng: RngState, def: MonsterDef, faction: FactionDef): string[] {
   const role = ROLE_GEAR[def.role]
   const gear: string[] = []
@@ -52,7 +56,13 @@ export function rollGear(rng: RngState, def: MonsterDef, faction: FactionDef): s
     const it = ITEMS[id]
     return isWeapon(it) && role.weaponSkills.includes(it.skill)
   })
-  if (weapons.length > 0) gear.push(pick(rng, weapons))
+  if (weapons.length > 0) {
+    const weapon = pick(rng, weapons)
+    gear.push(weapon)
+    const ranged = (ITEMS[weapon] as WeaponDef).ranged
+    if (ranged?.ammo) gear.push(...Array<string>(randInt(rng, ...RANGED_SUPPLY.ammo)).fill(ranged.ammo))
+    else if (ranged) gear.push(...Array<string>(randInt(rng, ...RANGED_SUPPLY.thrown) - 1).fill(weapon))
+  }
   if (role.armourChance <= 0) return gear
   for (const kind of ARMOUR_KINDS) {
     const pieces = faction.gear.filter((id) => {

@@ -61,6 +61,9 @@ export type KeyAction =
   | { kind: 'run'; dir: Dir }
   | { kind: 'open'; what: 'inventory' | 'equipment' | 'skills' | 'help' | 'use' | 'drop' | 'disassemble' }
   | { kind: 'look' }
+  | { kind: 'fire' }
+  | { kind: 'nextTarget'; back: boolean }
+  | { kind: 'confirm' }
   | { kind: 'escape' }
 
 export function directionFor(ev: KeyboardEvent): Dir | undefined {
@@ -71,6 +74,8 @@ export function directionFor(ev: KeyboardEvent): Dir | undefined {
 export function keyAction(ev: KeyboardEvent): KeyAction | undefined {
   if (ev.ctrlKey || ev.metaKey || ev.altKey) return undefined
   if (ev.key === 'Escape') return { kind: 'escape' }
+  if (ev.key === 'Tab') return { kind: 'nextTarget', back: ev.shiftKey }
+  if (ev.key === 'Enter') return { kind: 'confirm' }
   if (ev.key in RUN_LETTERS) return { kind: 'run', dir: RUN_LETTERS[ev.key]! }
   const dir = directionFor(ev)
   if (dir) return ev.shiftKey ? { kind: 'run', dir } : { kind: 'dir', dir }
@@ -104,6 +109,8 @@ export function keyAction(ev: KeyboardEvent): KeyAction | undefined {
       return { kind: 'open', what: 'disassemble' }
     case 'x':
       return { kind: 'look' }
+    case 'f':
+      return { kind: 'fire' }
   }
   return undefined
 }
