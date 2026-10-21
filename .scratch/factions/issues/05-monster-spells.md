@@ -25,3 +25,5 @@ Blocked by: 03, 04
 - Тест: маг лечит союзника и не колдует через союзника.
 
 ## Comments
+
+- 2026-10-21: реализовано (`data/src/spells.ts`, `core/src/combat/spells.ts` — `castSpell`, `spellReady`, `currentFatigue`; формулы усталости в модуле формул; ИИ мага — `healAlly` и общий со стрелком `rangedTurn` в `ai.ts`). Для задачи 06: у каждого заклинания есть `phenomenon`; события `spellCast` / `spellFizzled` (с `spellId`) и `attackHit`/`attackMissed` с `attack.kind === 'spell'` — точки, где копить данные явления (наблюдение, попадание по киборгу, срыв). `ProjectileTrail` теперь несёт `itemDefId` или `spellId`. Угроза заклинаний в `monsterThreat` не учтена.

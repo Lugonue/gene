@@ -13,6 +13,7 @@ import {
   POSSESSIVE,
   REJECT_TEXT,
   SKILLS,
+  SPELLS,
   TEMPLATES,
   VERBS,
   WOUND_LABELS,
@@ -119,10 +120,17 @@ function itemWords(defId: string): WordForms {
   return def.name
 }
 
-/** Чем нанесён удар: оружие, снаряд или естественная атака. */
+function spellWords(spellId: string): WordForms {
+  const def = SPELLS[spellId]
+  if (!def) throw new Error(`messages: неизвестное заклинание ${spellId}`)
+  return def.name
+}
+
+/** Чем нанесён удар: оружие, снаряд, заклинание или естественная атака. */
 function attackWords(attack: AttackRef): WordForms {
   if (attack.kind === 'weapon') return itemWords(attack.itemDefId)
   if (attack.kind === 'ranged') return itemWords(attack.projectileDefId)
+  if (attack.kind === 'spell') return spellWords(attack.spellId)
   const def = ATTACKS[attack.attackId]
   if (!def) throw new Error(`messages: неизвестная атака ${attack.attackId}`)
   return def.name
@@ -135,9 +143,9 @@ function attackKey(attack: AttackRef): string[] {
   return MAGIC_DAMAGE.has(attack.damageType) ? [attack.damageType] : [attackFamily(attack), attack.damageType]
 }
 
-/** Семейство шаблонов атаки: weapon, ranged, bite, claws, fist. */
+/** Семейство шаблонов атаки: weapon, ranged, spell, bite, claws, fist. */
 export function attackFamily(attack: AttackRef): string {
-  if (attack.kind === 'weapon' || attack.kind === 'ranged') return attack.kind
+  if (attack.kind !== 'natural') return attack.kind
   const tag = ATTACKS[attack.attackId]?.partTag
   return tag === 'bite' ? 'bite' : tag === 'claw' ? 'claws' : 'fist'
 }
@@ -322,6 +330,27 @@ export function renderEvents(events: GameEvent[], viewerId: string, opts: Render
             ? [`projectileBroken.${e.projectileDefId}`, 'projectileBroken']
             : [`projectileLanded.${e.wall ? 'wall' : 'floor'}`]
         push(msg(choose(rng, keys, b), turn, 'narrative'))
+        break
+      }
+
+      case 'spellCast':
+      case 'spellFizzled': {
+        const roles: Record<string, Role> = {
+          caster: creatureRole(e.caster, viewerId),
+          spell: { words: spellWords(e.spellId), person: 3 },
+        }
+        let keys = ['spellFizzled']
+        if (e.type === 'spellCast') {
+          roles.target = creatureRole(e.target, viewerId)
+          keys = [`spellCast.${e.spellId}`, `spellCast.${SPELLS[e.spellId]?.effect ?? 'bolt'}`]
+        }
+        push(msg(choose(rng, keys, { subject: 'caster', roles }), turn, 'narrative'))
+        break
+      }
+
+      case 'casterTired': {
+        const b: Bindings = { subject: 'caster', roles: { caster: creatureRole(e.caster, viewerId) } }
+        push(msg(choose(rng, [`casterTired.${e.stage}`], b), turn, 'narrative'))
         break
       }
 

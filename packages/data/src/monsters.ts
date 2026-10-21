@@ -129,6 +129,8 @@ export const MONSTERS: Record<string, MonsterDef> = {
     faction: 'goblins',
     role: 'mage',
     spawnWeight: 2,
+    spells: ['fireball'],
+    spellPower: 0.6,
   },
   hyena: {
     id: 'hyena',
@@ -224,6 +226,7 @@ export const MONSTERS: Record<string, MonsterDef> = {
     faction: 'orcs',
     role: 'mage',
     spawnWeight: 2,
+    spells: ['lightning'],
   },
   warg: {
     id: 'warg',
@@ -326,6 +329,7 @@ export const MONSTERS: Record<string, MonsterDef> = {
     faction: 'order',
     role: 'mage',
     spawnWeight: 2,
+    spells: ['frost_bolt', 'heal'],
   },
   war_dog: {
     id: 'war_dog',
@@ -368,6 +372,7 @@ export const MONSTERS: Record<string, MonsterDef> = {
     faction: 'order',
     role: 'leader',
     spawnWeight: 0,
+    spells: ['lightning'],
   },
 
   // ----- Кобольды драконьего культа (4-й уровень) -----
@@ -454,6 +459,7 @@ export const MONSTERS: Record<string, MonsterDef> = {
     faction: 'kobolds',
     role: 'mage',
     spawnWeight: 2,
+    spells: ['fireball', 'heal'],
   },
   drake: {
     id: 'drake',
@@ -510,5 +516,6 @@ export const MONSTERS: Record<string, MonsterDef> = {
     faction: 'kobolds',
     role: 'leader',
     spawnWeight: 0,
+    spells: ['fire_spit'],
   },
 }

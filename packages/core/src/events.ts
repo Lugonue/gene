@@ -2,6 +2,7 @@
 import type { DamageType, Material, RejectReasonKey, SkillId, SlotId, WoundStage } from '@gene/data'
 import type { StudyStatus } from './state'
 import type { FeatureKind } from './world/notice'
+import type { FatigueStage } from './combat/formulas'
 
 /** Ссылка на существо в событии: id и вид ('player' или id монстра). */
 export interface ActorRef {
@@ -14,6 +15,8 @@ export type AttackRef =
   | { kind: 'natural'; attackId: string; damageType: DamageType }
   /** Выстрел или бросок: itemDefId — оружие, projectileDefId — боеприпас или само метательное оружие. */
   | { kind: 'ranged'; itemDefId: string; projectileDefId: string; damageType: DamageType }
+  /** Заклинание-снаряд (id из SPELLS). */
+  | { kind: 'spell'; spellId: string; damageType: DamageType }
 
 export type HitSeverity = 'absorbed' | 'light' | 'medium' | 'heavy'
 
@@ -79,6 +82,12 @@ export type GameEvent =
   | { type: 'projectileBroken'; projectileDefId: string }
   /** Снаряд никого не задел: упал на пол или ударился в стену. */
   | { type: 'projectileLanded'; projectileDefId: string; wall: boolean }
+  /** Монстр колдует: снаряд в цель или лечение союзника-цели. */
+  | { type: 'spellCast'; caster: ActorRef; spellId: string; target: ActorRef }
+  /** Срыв: ход и перезарядка потрачены, эффекта нет. */
+  | { type: 'spellFizzled'; caster: ActorRef; spellId: string }
+  /** Усталость заклинателя перешла на новую ступень. */
+  | { type: 'casterTired'; caster: ActorRef; stage: Exclude<FatigueStage, 'fresh'> }
   | { type: 'itemsHere'; itemDefIds: string[] }
   | { type: 'itemPickedUp'; itemDefId: string; count: number }
   | { type: 'itemDropped'; itemDefId: string; count: number; owner: ActorRef }

@@ -3,6 +3,7 @@
 import { ITEMS, type WeaponDef } from '@gene/data'
 import type { Ctx } from '../context'
 import type { RejectReason } from '../events'
+import type { ProjectileTrail } from '../protocol'
 import { creatureAt, player, tileAt, type Creature, type GameState, type ItemInstance, type LevelState, type Pos } from '../state'
 import { equippedWeapon, isEquipped } from '../body'
 import { destroyItem, dropAt, removeFromOwner } from '../items'
@@ -80,7 +81,7 @@ export function fire(ctx: Ctx, shooter: Creature, target: Pos, ready: ShotReady)
   const land = flight[flight.length - 1] ?? { x: shooter.x, y: shooter.y }
 
   ctx.events.push({ type: 'shotFired', attacker: actorRef(shooter), weaponDefId: ready.def.id, projectileDefId })
-  recordTrail(ctx, shooter, flight, projectileDefId)
+  recordTrail(ctx, shooter, flight, { itemDefId: projectileDefId })
 
   const hit = struck ? resolveAttack(ctx, shooter, struck.creature, rangedAttack(ready.inst, ready.def, projectileDefId)) : false
   if (!struck) ctx.events.push({ type: 'projectileLanded', projectileDefId, wall: path.length < ready.range })
@@ -110,8 +111,8 @@ function throwWeapon(ctx: Ctx, owner: Creature, inst: ItemInstance, land: Pos): 
   if (owner.kind === 'player') ctx.events.push({ type: 'itemEquipped', itemDefId: next.defId, slot: 'weapon' })
 }
 
-/** Полёт попадает в анимацию, если игрок видит стрелка или хоть одну клетку пути. */
-function recordTrail(ctx: Ctx, shooter: Creature, flight: Pos[], itemDefId: string): void {
+/** Полёт попадает в анимацию, если игрок видит стрелка или хоть одну клетку пути. what — что летит. */
+export function recordTrail(ctx: Ctx, shooter: Creature, flight: Pos[], what: Omit<ProjectileTrail, 'cells'>): void {
   const { state } = ctx
   const p = player(state)
   if (p.depth !== shooter.depth || flight.length === 0) return
@@ -119,5 +120,5 @@ function recordTrail(ctx: Ctx, shooter: Creature, flight: Pos[], itemDefId: stri
   const visible = playerVisibleCells(state)
   const idx = (q: Pos): number => q.y * level.width + q.x
   if (!visible.has(idx(shooter)) && !flight.some((q) => visible.has(idx(q)))) return
-  ;(ctx.projectiles ??= []).push({ cells: flight.map(idx), itemDefId })
+  ;(ctx.projectiles ??= []).push({ cells: flight.map(idx), ...what })
 }

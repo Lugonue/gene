@@ -81,6 +81,8 @@ export interface Creature {
   squad?: string
   /** До какого момента (aut) существо замедлено холодом. */
   slowedUntil?: number
+  /** Колдовство монстра: усталость на момент fatigueAt (aut) и когда готово каждое заклинание. */
+  magic?: { fatigue: number; fatigueAt: number; readyAt: Record<string, number> }
 }
 
 export type ItemLocation =

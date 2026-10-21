@@ -8,7 +8,7 @@
 //
 // Роли: attacker, target, victim, creature — существа; part / tpart — часть тела (tpart — «чья»:
 // «твою левую руку» / «левую руку гоблина»); weapon / aweapon — оружие или естественная атака
-// (aweapon — атакующего; в дальнем бою — снаряд); projectile — снаряд в сообщениях о выстреле; armour / tarmour — броня (tarmour — цели); item / oitem — предмет (oitem — владельца).
+// (aweapon — атакующего; в дальнем бою — снаряд); projectile — снаряд в сообщениях о выстреле; caster — заклинатель, spell — заклинание; armour / tarmour — броня (tarmour — цели); item / oitem — предмет (oitem — владельца).
 // Также подставляются {label}, {material}, {pct}, {eff}, {skill}, {level}, {category}, {list}, {count}.
 
 import type { Case, Gender, RejectReasonKey } from './types'
@@ -73,6 +73,15 @@ export const VERBS: Record<string, [string, string, string]> = {
   пробивать: ['пробиваешь', 'пробивает', 'пробивают'],
   раскалываться: ['раскалываешься', 'раскалывается', 'раскалываются'],
   ударяться: ['ударяешься', 'ударяется', 'ударяются'],
+  выпускать: ['выпускаешь', 'выпускает', 'выпускают'],
+  швырять: ['швыряешь', 'швыряет', 'швыряют'],
+  изрыгать: ['изрыгаешь', 'изрыгает', 'изрыгают'],
+  плевать: ['плюёшь', 'плюёт', 'плюют'],
+  призывать: ['призываешь', 'призывает', 'призывают'],
+  лечить: ['лечишь', 'лечит', 'лечат'],
+  дышать: ['дышишь', 'дышит', 'дышат'],
+  держаться: ['держишься', 'держится', 'держатся'],
+  шататься: ['шатаешься', 'шатается', 'шатаются'],
 }
 
 /** Краткие прилагательные и причастия по роду. */
@@ -86,6 +95,7 @@ export const ADJECTIVES: Record<string, Record<Gender, string>> = {
   выведен: { m: 'выведен', f: 'выведена', n: 'выведено', pl: 'выведены' },
   сломан: { m: 'сломан', f: 'сломана', n: 'сломано', pl: 'сломаны' },
   разобран: { m: 'разобран', f: 'разобрана', n: 'разобрано', pl: 'разобраны' },
+  выдохся: { m: 'выдохся', f: 'выдохлась', n: 'выдохлось', pl: 'выдохлись' },
 }
 
 /** Притяжательное «твой» по роду и падежу (для неодушевлённых: вин. м. р. = им.). */
@@ -348,6 +358,22 @@ export const TEMPLATES: Record<string, string[]> = {
   'projectileBroken.stone': ['{projectile.nom} {verb:раскалываться@projectile}.'],
   'projectileLanded.wall': ['{projectile.nom} {verb:ударяться@projectile} о стену.'],
   'projectileLanded.floor': ['{projectile.nom} {verb:падать@projectile} на пол.'],
+
+  // ---------- Заклинания монстров ----------
+  // spellCast.<id заклинания> → spellCast.<bolt|heal>. Усталость — словами, без чисел и терминов.
+  'spellCast.bolt': [
+    '{caster.nom} {verb:выпускать@caster} {spell.acc} в {target.acc}.',
+    '{caster.nom} {verb:швырять@caster} {spell.acc} в {target.acc}.',
+  ],
+  'spellCast.lightning': [
+    '{caster.nom} {verb:призывать@caster} молнию на {target.acc}.',
+    'Между ладоней {caster.gen} вспыхивает молния и бьёт в {target.acc}.',
+  ],
+  'spellCast.fire_spit': ['{caster.nom} {verb:изрыгать@caster} огонь в {target.acc}.', '{caster.nom} {verb:плевать@caster} огнём в {target.acc}.'],
+  'spellCast.heal': ['{caster.nom} {verb:лечить@caster} {target.acc}.', 'Раны {target.gen} затягиваются от заклинания {caster.gen}.'],
+  spellFizzled: ['Заклинание {caster.gen} срывается.', 'Чары {caster.gen} рассеиваются впустую.'],
+  'casterTired.tired': ['{caster.nom} тяжело {verb:дышать@caster}.', '{caster.nom} {verb:шататься@caster} после заклинания.'],
+  'casterTired.exhausted': ['{caster.nom} {adj:выдохся@caster}.', '{caster.nom} едва {verb:держаться@caster} на ногах.'],
 
   // ---------- Прочее ----------
   monsterNoticed: ['Ты замечаешь {creature.acc}.', 'Впереди {verb:появляться@creature} {creature.nom}.'],

@@ -1,0 +1,88 @@
+import type { SpellDef } from './types'
+import { w } from './words'
+
+// Заклинания монстров (спека factions, «Магия монстров»). Перезарядка — в aut (обычный ход — 10).
+export const SPELLS: Record<string, SpellDef> = {
+  fireball: {
+    id: 'fireball',
+    name: w(
+      ['огненный шар', 'огненного шара', 'огненному шару', 'огненный шар', 'огненным шаром', 'огненном шаре'],
+      'm',
+    ),
+    phenomenon: 'fireball',
+    effect: 'bolt',
+    damageType: 'fire',
+    damage: 8,
+    accuracy: 6,
+    range: 7,
+    cooldown: 40,
+    glyph: '*',
+    color: '#ff8a3d',
+  },
+  fire_spit: {
+    id: 'fire_spit',
+    name: w(
+      [
+        'огненный плевок',
+        'огненного плевка',
+        'огненному плевку',
+        'огненный плевок',
+        'огненным плевком',
+        'огненном плевке',
+      ],
+      'm',
+    ),
+    phenomenon: 'fireball',
+    effect: 'bolt',
+    damageType: 'fire',
+    damage: 10,
+    accuracy: 5,
+    range: 5,
+    cooldown: 60,
+    glyph: '*',
+    color: '#ff5a1f',
+  },
+  frost_bolt: {
+    id: 'frost_bolt',
+    name: w(
+      [
+        'ледяная стрела',
+        'ледяной стрелы',
+        'ледяной стреле',
+        'ледяную стрелу',
+        'ледяной стрелой',
+        'ледяной стреле',
+      ],
+      'f',
+    ),
+    phenomenon: 'frost_bolt',
+    effect: 'bolt',
+    damageType: 'cold',
+    damage: 6,
+    accuracy: 8,
+    range: 7,
+    cooldown: 40,
+    color: '#9fd8ff',
+  },
+  lightning: {
+    id: 'lightning',
+    name: w(['молния', 'молнии', 'молнии', 'молнию', 'молнией', 'молнии'], 'f'),
+    phenomenon: 'lightning',
+    effect: 'bolt',
+    damageType: 'lightning',
+    damage: 8,
+    accuracy: 10,
+    range: 8,
+    cooldown: 50,
+    color: '#fff36b',
+  },
+  heal: {
+    id: 'heal',
+    name: w(['лечение', 'лечения', 'лечению', 'лечение', 'лечением', 'лечении'], 'n'),
+    phenomenon: 'heal',
+    effect: 'heal',
+    heal: 10,
+    range: 6,
+    cooldown: 60,
+  },
+}

@@ -264,6 +264,57 @@ export function projectileBreaks(rng: RngState, breakChance: number, hit: boolea
 }
 
 // ---------------------------------------------------------------------------
+// Заклинания монстров: усталость, срыв, перезарядка
+// ---------------------------------------------------------------------------
+
+/** Усталость за одно заклинание (и за сорвавшееся тоже). */
+export const FATIGUE_PER_CAST = 1
+/** За сколько aut спадает единица усталости. */
+const FATIGUE_RECOVERY_TIME = 50
+const FIZZLE_BASE = 0.05
+const FIZZLE_PER_FATIGUE = 0.12
+const FIZZLE_MAX = 0.8
+/** На сколько удлиняет перезарядку каждая единица усталости. */
+const COOLDOWN_PER_FATIGUE = 0.35
+
+export function fizzleChance(fatigue: number): number {
+  return Math.min(FIZZLE_MAX, FIZZLE_BASE + FIZZLE_PER_FATIGUE * fatigue)
+}
+
+/** Перезарядка заклинания (aut) с учётом усталости заклинателя. */
+export function spellCooldown(base: number, fatigue: number): number {
+  return Math.round(base * (1 + COOLDOWN_PER_FATIGUE * fatigue))
+}
+
+/** Усталость после отдыха длительностью elapsed (aut). */
+export function recoverFatigue(fatigue: number, elapsed: number): number {
+  return Math.max(0, fatigue - elapsed / FATIGUE_RECOVERY_TIME)
+}
+
+export type FatigueStage = 'fresh' | 'tired' | 'exhausted'
+
+/** Ступень усталости для повествования («шаман тяжело дышит», «шаман выдохся»). */
+export function fatigueStage(fatigue: number): FatigueStage {
+  if (fatigue >= 4) return 'exhausted'
+  if (fatigue >= 2) return 'tired'
+  return 'fresh'
+}
+
+/** Маг лечит союзника, у которого осталось меньше этой доли HP. */
+export const HEAL_ALLY_HP_SHARE = 0.6
+
+/** Урон снаряда заклинания до броска: база заклинания × сила вида (MonsterDef.spellPower). */
+export function spellDamage(base: number, power = 1): number {
+  return base * power
+}
+
+/** Лечение заклинанием: HP и доля hp каждой органической части. */
+export function spellHeal(base: number, power = 1, target: Creature): { hp: number; partFraction: number } {
+  const hp = Math.max(1, Math.round(base * power))
+  return { hp, partFraction: hp / Math.max(1, target.maxHp) }
+}
+
+// ---------------------------------------------------------------------------
 // Прочность
 // ---------------------------------------------------------------------------
 

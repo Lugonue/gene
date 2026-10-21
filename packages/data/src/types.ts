@@ -99,7 +99,45 @@ export interface MonsterDef {
   role: MonsterRole
   /** Вес при расстановке среди видов фракции (вожак ставится отдельно). */
   spawnWeight: number
+  /** Заклинания вида (id из SPELLS). */
+  spells?: string[]
+  /** Сила заклинаний вида: множитель урона и лечения (по умолчанию 1). */
+  spellPower?: number
 }
+
+// ---------- Заклинания ----------
+
+/** Явление — эффект, как его видит Ядро: огненный шар гоблина и плевок драконорождённого — одно явление. */
+export type PhenomenonId = 'fireball' | 'frost_bolt' | 'lightning' | 'heal'
+
+interface SpellDefBase {
+  id: string
+  name: WordForms
+  phenomenon: PhenomenonId
+  /** Дальность (клетки, по Чебышёву). */
+  range: number
+  /** Базовая перезарядка (aut). */
+  cooldown: number
+}
+
+/** Снаряд: летит и попадает как стрела. */
+export interface BoltSpellDef extends SpellDefBase {
+  effect: 'bolt'
+  damageType: MagicDamageType
+  damage: number
+  accuracy: number
+  /** Символ снаряда в полёте; без него — черта по направлению полёта. */
+  glyph?: string
+  color: string
+}
+
+/** Лечение союзника в поле зрения. */
+export interface HealSpellDef extends SpellDefBase {
+  effect: 'heal'
+  heal: number
+}
+
+export type SpellDef = BoltSpellDef | HealSpellDef
 
 // ---------- Фракции ----------
 

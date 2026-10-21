@@ -6,6 +6,7 @@ import {
   MAGIC_DAMAGE_TYPES,
   MONSTERS,
   PLAYER_WORDS,
+  SPELLS,
   TEMPLATES,
   type DamageType,
   type Material,
@@ -308,8 +309,8 @@ describe('сообщения дальнего боя', () => {
 
 describe('сообщения магических типов урона', () => {
   const MAGIC = MAGIC_DAMAGE_TYPES
-  /** Снаряд заклинания появится в задаче 05; текст магии не зависит от того, чем нанесён удар. */
-  const magic = (damageType: DamageType): AttackRef => ({ kind: 'natural', attackId: 'fist', damageType })
+  /** Текст магии не зависит от того, каким заклинанием нанесён удар. */
+  const magic = (damageType: DamageType): AttackRef => ({ kind: 'spell', spellId: 'fireball', damageType })
 
   it('все части тела × новые типы × исходы — без плейсхолдеров, в обе стороны', () => {
     for (const damageType of MAGIC) {
@@ -359,7 +360,6 @@ describe('сообщения магических типов урона', () => 
       expect(hit('lightning', 'organic', sev).some((t) => /разряд/i.test(t))).toBe(true)
       expect(hit('lightning', 'bionic', sev).every((t) => /сбой|замыкани/i.test(t))).toBe(true)
     }
-    // Магия не «бьёт кулаком», даже если нанесена естественной атакой.
     for (const type of MAGIC) for (const t of hit(type, 'organic', 'medium')) expect(t).not.toMatch(/кулак/)
   })
 
@@ -373,5 +373,53 @@ describe('сообщения магических типов урона', () => 
     expectClean(events)
     expect(renderEvents(events, 'p').length).toBe(events.length)
     expect(text({ type: 'creatureSlowed', creature: mon('goblin_shaman') })).toContain('шаман')
+  })
+})
+
+describe('сообщения заклинаний монстров', () => {
+  const casters = Object.values(MONSTERS).filter((m) => m.spells?.length)
+  const text = (e: GameEvent): string => renderEvents([e], 'p')[0]!.text
+
+  it('колдовство, срыв и усталость — у всех заклинателей, без плейсхолдеров', () => {
+    const events: GameEvent[] = []
+    for (const m of casters) {
+      const caster = mon(m.id)
+      for (const spellId of m.spells!) {
+        const target = SPELLS[spellId]!.effect === 'heal' ? mon(casters[0]!.id) : PLAYER
+        events.push({ type: 'spellCast', caster, spellId, target }, { type: 'spellFizzled', caster, spellId })
+      }
+      events.push({ type: 'casterTired', caster, stage: 'tired' }, { type: 'casterTired', caster, stage: 'exhausted' })
+    }
+    expectClean(events)
+    expect(renderEvents(events, 'p').length).toBe(events.length)
+  })
+
+  it('попадание снарядом заклинания — в обе стороны, по всем частям', () => {
+    for (const spell of Object.values(SPELLS)) {
+      if (spell.effect !== 'bolt') continue
+      const attack: AttackRef = { kind: 'spell', spellId: spell.id, damageType: spell.damageType }
+      for (const part of BODY_PLANS.humanoid!.parts) {
+        expectClean(combatEvents(mon('dragon_priest'), PLAYER, attack, part.id, 'bionic'))
+        expectClean(combatEvents(PLAYER, mon('templar'), attack, part.id, 'organic'))
+      }
+    }
+  })
+
+  it('контрольные примеры', () => {
+    expect(text({ type: 'spellCast', caster: mon('goblin_shaman'), spellId: 'fireball', target: PLAYER })).toContain(
+      'огненный шар',
+    )
+    expect(text({ type: 'spellCast', caster: mon('sorcerer'), spellId: 'heal', target: mon('templar') })).toMatch(
+      /храмовник/,
+    )
+    expect(text({ type: 'spellFizzled', caster: mon('goblin_shaman'), spellId: 'fireball' })).toMatch(/шамана/)
+    const tired = new Set<string>()
+    for (let turn = 0; turn < 20; turn++)
+      tired.add(
+        renderEvents([{ type: 'casterTired', caster: mon('goblin_shaman'), stage: 'exhausted' }], 'p', { turn })[0]!.text,
+      )
+    expect([...tired].some((t) => t === 'Гоблин-шаман выдохся.')).toBe(true)
+    // Усталость — словами, без технических терминов.
+    for (const t of tired) expect(t).not.toMatch(/усталост|перезаряд|%/i)
   })
 })

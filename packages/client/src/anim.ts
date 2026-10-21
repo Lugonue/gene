@@ -1,7 +1,7 @@
 // Анимация многоходовых действий (автоисследование, бег): проигрывает кадры с сервера,
 // постепенно проявляя память карты, затем применяет итоговый вид. Так же, по клетке за кадр,
 // пролетают снаряды — поверх карты до хода.
-import { ITEMS } from '@gene/data'
+import { ITEMS, SPELLS } from '@gene/data'
 import type { MoveFrame, ProjectileTrail } from '@gene/core'
 import { store } from './store'
 
@@ -47,10 +47,19 @@ export function playFrames(frames: MoveFrame[], onDone: () => void): void {
   timer = setInterval(step, STEP_MS)
 }
 
-/** Черта по направлению полёта; камень и прочее со своим символом — им. */
+/** Символ и цвет снаряда: предмет или заклинание-снаряд (без своего символа — черта). */
+function projectileLook(trail: ProjectileTrail): { glyph?: string; color: string } {
+  const spell = trail.spellId ? SPELLS[trail.spellId] : undefined
+  if (spell?.effect === 'bolt') return { ...(spell.glyph ? { glyph: spell.glyph } : {}), color: spell.color }
+  const def = trail.itemDefId ? ITEMS[trail.itemDefId] : undefined
+  const glyph = def?.category === 'consumable' ? def.projectileGlyph : undefined
+  return { ...(glyph ? { glyph } : {}), color: def?.color ?? '#ffffff' }
+}
+
+/** Черта по направлению полёта; камень, огненный шар и прочее со своим символом — им. */
 function projectileGlyph(trail: ProjectileTrail, width: number): string {
-  const def = ITEMS[trail.itemDefId]
-  if (def?.category === 'consumable' && def.projectileGlyph) return def.projectileGlyph
+  const own = projectileLook(trail).glyph
+  if (own) return own
   const a = trail.cells[0]!
   const b = trail.cells[trail.cells.length - 1]!
   const dx = Math.sign((b % width) - (a % width))
@@ -66,7 +75,7 @@ export function playProjectiles(trails: ProjectileTrail[], onDone: () => void): 
   const { width } = view.map
   const steps = trails.flatMap((t) => {
     const glyph = projectileGlyph(t, width)
-    const color = ITEMS[t.itemDefId]?.color ?? '#ffffff'
+    const { color } = projectileLook(t)
     return t.cells.map((i) => ({ x: i % width, y: Math.floor(i / width), glyph, color }))
   })
   let i = 0

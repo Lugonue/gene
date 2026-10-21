@@ -6,10 +6,10 @@ import { actionCost } from '../time'
 import { findPart, isEquipped, slotsForItem } from '../body'
 import { destroyItem, dropToFloor, giveItem, needsSlot } from '../items'
 import { encounterItemType, gainSkillXp, studyItemType } from '../knowledge'
+import { healCreature } from '../health'
 import {
   SKILL_XP,
   STUDY_GAIN,
-  organicHealCap,
   potionHeal,
   repairAmount,
   treatOneStage,
@@ -122,15 +122,8 @@ export function useAction(ctx: Ctx, itemId: string, targetPartId?: string, targe
       break
     }
     case 'healPotion': {
-      const heal = potionHeal(p)
       const before = p.hp
-      p.hp = Math.min(p.maxHp, p.hp + heal.hp)
-      for (const part of p.parts) {
-        if (part.material !== 'organic' || part.wound === 'severed') continue
-        const gain = Math.ceil(part.maxHp * heal.partFraction)
-        part.hp = Math.max(part.hp, Math.min(organicHealCap(part), part.hp + gain))
-        part.wound = woundStageFor(part)
-      }
+      healCreature(p, potionHeal(p))
       ctx.events.push({ type: 'potionDrunk', healed: p.hp - before })
       break
     }

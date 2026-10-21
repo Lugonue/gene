@@ -22,10 +22,11 @@ export interface MoveFrame {
   tiles: string
 }
 
-/** Полёт снаряда, видимый игроку: клетки пути (индексы y*width+x) и тип снаряда. */
+/** Полёт снаряда, видимый игроку: клетки пути (индексы y*width+x) и что летит — предмет или заклинание. */
 export interface ProjectileTrail {
   cells: number[]
-  itemDefId: string
+  itemDefId?: string
+  spellId?: string
 }
 
 export interface GameSummary {

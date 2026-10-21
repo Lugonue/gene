@@ -1,16 +1,17 @@
 // Простой ИИ монстров: видит игрока — идёт к нему (A*) и атакует; ранен — может отступать; иначе бродит.
-// Стрелки держат дистанцию и стреляют, когда есть линия огня.
+// Стрелки и маги держат дистанцию и стреляют или колдуют, когда есть линия огня; маги лечат раненых союзников.
 import * as ROT from 'rot-js'
-import { FACTIONS, MONSTERS, type FactionTrait } from '@gene/data'
+import { FACTIONS, MONSTERS, type BoltSpellDef, type FactionTrait } from '@gene/data'
 import type { Ctx } from './context'
 import { DIRS, TILE, creatureAt, player, setTile, tileAt, type Creature, type Pos } from './state'
 import { actionCost, spendTime } from './time'
-import { TRACK_TIME, fovRadius, wantsToFlee } from './combat/formulas'
+import { HEAL_ALLY_HP_SHARE, TRACK_TIME, fovRadius, wantsToFlee } from './combat/formulas'
 import { actorRef, resolveAttack } from './combat/attack'
 import { planOf } from './body'
 import { chance, pick } from './rng'
 import { computeFov } from './world/fov'
-import { distance, fire, firstCreatureOnPath, projectilePath, readyToShoot, type ShotReady } from './combat/ranged'
+import { distance, fire, firstCreatureOnPath, projectilePath, readyToShoot } from './combat/ranged'
+import { castSpell, spellReady, spellsOf } from './combat/spells'
 
 export function monsterTurn(ctx: Ctx, c: Creature): void {
   const { state } = ctx
@@ -56,9 +57,22 @@ export function monsterTurn(ctx: Ctx, c: Creature): void {
     return rest(c)
   }
 
+  // Вплотную к игроку маг сперва отходит, а не лечит.
+  if (!adjacent && healAlly(ctx, c)) return
+
   if (sees) {
     const ready = readyToShoot(state, c)
-    if (typeof ready !== 'string') return shooterTurn(ctx, c, p, ready)
+    if (typeof ready !== 'string') return rangedTurn(ctx, c, p, ready.range, () => fire(ctx, c, p, ready))
+    const bolt = spellsOf(c).find((s): s is BoltSpellDef => s.effect === 'bolt')
+    if (bolt) {
+      const cast = spellReady(state, c, bolt) ? () => castSpell(ctx, c, bolt, p) : undefined
+      if (MONSTERS[c.kind]?.role === 'mage') return rangedTurn(ctx, c, p, bolt.range, cast)
+      // Остальные заклинатели (вожаки) колдуют между ударами, если цель не вплотную.
+      if (cast && !adjacent && hasLineOfFire(ctx, c, c, p, bolt.range)) {
+        cast()
+        return spendTime(c, actionCost(c, 'attack'))
+      }
+    }
   }
 
   if (adjacent) return attack(ctx, c, p)
@@ -142,21 +156,23 @@ function fleeStep(ctx: Ctx, c: Creature, from: Pos): Pos | undefined {
 }
 
 /**
- * Ход стрелка, видящего цель: рядом — отходит (зажатый в угол бьёт в ближнем бою); есть линия огня — стреляет;
- * иначе переходит на соседнюю клетку с линией огня или подходит, не вставая вплотную.
+ * Ход стрелка или мага, видящего цель: рядом — отходит (зажатый в угол бьёт в ближнем бою); есть линия огня —
+ * стреляет или колдует (shoot), а без готового заклинания ждёт на месте; иначе переходит на соседнюю клетку
+ * с линией огня или подходит, не вставая вплотную.
  */
-function shooterTurn(ctx: Ctx, c: Creature, target: Creature, ready: ShotReady): void {
+function rangedTurn(ctx: Ctx, c: Creature, target: Creature, range: number, shoot?: () => void): void {
   if (distance(c, target) <= 1) {
     const step = fleeStep(ctx, c, target)
     return step ? moveTo(ctx, c, step) : attack(ctx, c, target)
   }
-  if (hasLineOfFire(ctx, c, c, target, ready.range)) {
-    fire(ctx, c, target, ready)
+  if (hasLineOfFire(ctx, c, c, target, range)) {
+    if (!shoot) return rest(c)
+    shoot()
     return spendTime(c, actionCost(c, 'attack'))
   }
   const spot = Object.values(DIRS)
     .map((d) => ({ x: c.x + d.x, y: c.y + d.y }))
-    .find((q) => canEnter(ctx, c, q) && distance(q, target) > 1 && hasLineOfFire(ctx, c, q, target, ready.range))
+    .find((q) => canEnter(ctx, c, q) && distance(q, target) > 1 && hasLineOfFire(ctx, c, q, target, range))
   if (spot) return moveTo(ctx, c, spot)
   const step = pathStep(ctx, c, target)
   if (step && distance(step, target) > 1) return moveTo(ctx, c, step)
@@ -193,6 +209,24 @@ function rest(c: Creature): void {
 function factionTrait(c: Creature): FactionTrait | undefined {
   const def = MONSTERS[c.kind]
   return def ? FACTIONS[def.faction].trait : undefined
+}
+
+/** Маг с готовым лечением лечит самого раненого союзника в поле зрения и в пределах дальности. */
+function healAlly(ctx: Ctx, c: Creature): boolean {
+  const heal = spellsOf(c).find((s) => s.effect === 'heal' && spellReady(ctx.state, c, s))
+  if (!heal) return false
+  const faction = MONSTERS[c.kind]?.faction
+  const share = (o: Creature): number => o.hp / o.maxHp
+  let best: Creature | undefined
+  for (const o of Object.values(ctx.state.creatures)) {
+    if (o.id === c.id || o.depth !== c.depth || MONSTERS[o.kind]?.faction !== faction) continue
+    if (share(o) >= HEAL_ALLY_HP_SHARE || distance(c, o) > heal.range || !canSee(ctx, c, o)) continue
+    if (!best || share(o) < share(best)) best = o
+  }
+  if (!best) return false
+  castSpell(ctx, c, heal, best)
+  spendTime(c, actionCost(c, 'attack'))
+  return true
 }
 
 /** Ближайший монстр той же фракции на уровне. */
