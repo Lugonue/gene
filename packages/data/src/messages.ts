@@ -57,6 +57,7 @@ export const VERBS: Record<string, [string, string, string]> = {
   погибать: ['погибаешь', 'погибает', 'погибают'],
   валиться: ['валишься', 'валится', 'валятся'],
   двигаться: ['двигаешься', 'двигается', 'двигаются'],
+  замедляться: ['замедляешься', 'замедляется', 'замедляются'],
   изнашиваться: ['изнашиваешься', 'изнашивается', 'изнашиваются'],
   ломаться: ['ломаешься', 'ломается', 'ломаются'],
   замечать: ['замечаешь', 'замечает', 'замечают'],
@@ -101,6 +102,8 @@ export const MATERIAL_NAMES = { organic: 'органика', bionic: 'биони
  * Шаблоны по ключу. Ключ ищется от самого точного к общему:
  * hit.<семейство>.<тип урона>.<тяжесть>.<материал> → … → hit.<семейство> → hit.
  * Семейства атак: weapon (оружие), ranged (снаряд), bite (укус), claws (когти), fist (кулак).
+ * Магические типы урона (fire, cold, lightning) не зависят от семейства: hit.<тип>.<тяжесть>.<материал>,
+ * miss.<тип>, absorbed.<armour|bionic>.<тип>.
  */
 export const TEMPLATES: Record<string, string[]> = {
   // ---------- Промахи ----------
@@ -243,6 +246,50 @@ export const TEMPLATES: Record<string, string[]> = {
     '{attacker.nom} со всей силы {verb:бить} {target.acc} по {part.dat}!',
   ],
 
+  // ---------- Магия: огонь, холод, молния (подлежащее — сама стихия) ----------
+  'miss.fire': ['Пламя проносится мимо {target.gen}.', 'Огонь опаляет воздух рядом с {target.ins}.'],
+  'miss.cold': ['Ледяной вихрь проносится мимо {target.gen}.', 'Холод проходит стороной, не задев {target.acc}.'],
+  'miss.lightning': ['Разряд бьёт в пол рядом с {target.ins}.', 'Молния проскакивает мимо {target.gen}.'],
+  'hit.fire.light.organic': ['Пламя лижет {tpart.acc}: лёгкий ожог.', 'Жар опаляет {tpart.acc}.'],
+  'hit.fire.medium.organic': ['Огонь обжигает {tpart.acc}.', 'Пламя охватывает {tpart.acc}: ожог.'],
+  'hit.fire.heavy.organic': [
+    'Огонь сжигает кожу на {tpart.prep}: тяжёлый ожог!',
+    'Пламя глубоко прожигает {tpart.acc}: тяжёлый ожог!',
+  ],
+  'hit.fire.light.bionic': ['Жар обдаёт корпус {tpart.gen}.', 'Пламя скользит по обшивке {tpart.gen}.'],
+  'hit.fire.medium.bionic': ['Огонь оплавляет обшивку {tpart.gen}.', 'Пламя раскаляет корпус {tpart.gen}.'],
+  'hit.fire.heavy.bionic': ['Огонь плавит корпус {tpart.gen}!', 'Обшивка {tpart.gen} оплывает от жара!'],
+  'hit.cold.light.organic': ['Холод щиплет {tpart.acc}.', 'Иней ложится на {tpart.acc}.'],
+  'hit.cold.medium.organic': ['Мороз жжёт {tpart.acc}: обморожение.', 'Лёд сковывает {tpart.acc}: обморожение.'],
+  'hit.cold.heavy.organic': [
+    '{tpart.nom} промерзает до кости: тяжёлое обморожение!',
+    'Лёд намертво сковывает {tpart.acc}: тяжёлое обморожение!',
+  ],
+  'hit.cold.light.bionic': ['Иней оседает на корпусе {tpart.gen}.', 'Холод обдаёт обшивку {tpart.gen}.'],
+  'hit.cold.medium.bionic': ['Обшивка {tpart.gen} покрывается льдом.', 'Мороз сковывает сервоприводы {tpart.gen}.'],
+  'hit.cold.heavy.bionic': ['Лёд намертво сковывает сервоприводы {tpart.gen}!', 'Корпус {tpart.gen} трескается от мороза!'],
+  'hit.lightning.light.organic': ['Разряд покалывает {tpart.acc}.', 'Искра разряда жалит {tpart.acc}.'],
+  'hit.lightning.medium.organic': ['Разряд бьёт {target.acc} в {part.acc}.', 'Молния прошивает {tpart.acc}: ожог от разряда.'],
+  'hit.lightning.heavy.organic': [
+    'Мощный разряд прошивает {tpart.acc}, мышцы сводит судорогой!',
+    'Молния бьёт {target.acc} в {part.acc}: тело сводит судорогой от разряда!',
+  ],
+  'hit.lightning.light.bionic': [
+    'Разряд пробегает по корпусу {tpart.gen}: мелкий сбой.',
+    'Искры пляшут по обшивке {tpart.gen}, датчики сбоят.',
+  ],
+  'hit.lightning.medium.bionic': ['Разряд выбивает цепи {tpart.gen}: сбой бионики.', 'Молния бьёт в {tpart.acc}: короткое замыкание.'],
+  'hit.lightning.heavy.bionic': [
+    'Молния выжигает схемы {tpart.gen}: критический сбой бионики!',
+    'Разряд перегружает {tpart.acc}: сбой, короткое замыкание!',
+  ],
+  'absorbed.armour.fire': ['{tarmour.nom} {verb:выдерживать@armour} жар.', 'Пламя бессильно растекается по {tarmour.dat}.'],
+  'absorbed.armour.cold': ['{tarmour.nom} {verb:выдерживать@armour} холод.', 'Иней оседает на {tarmour.prep}, не причиняя вреда.'],
+  'absorbed.armour.lightning': ['{tarmour.nom} {verb:принимать@armour} разряд на себя.', 'Разряд уходит в {tarmour.acc}.'],
+  'absorbed.bionic.fire': ['Жар не пробивает бионический корпус {tpart.gen}.', 'Пламя скользит по корпусу {tpart.gen}, не причиняя вреда.'],
+  'absorbed.bionic.cold': ['Иней оседает на корпусе {tpart.gen}, не причиняя вреда.', 'Бионический корпус {tpart.gen} выдерживает холод.'],
+  'absorbed.bionic.lightning': ['Изоляция {tpart.gen} гасит разряд.', 'Разряд уходит в заземление {tpart.gen}.'],
+
   // ---------- Поглощение бронёй ----------
   'absorbed.armour': [
     '{attacker.nom} {verb:попадать} {target.dat} в {part.acc}, но {tarmour.nom} {verb:выдерживать@armour} удар.',
@@ -262,6 +309,12 @@ export const TEMPLATES: Record<string, string[]> = {
   'flavor.bionic.slash': ['Сыплются искры.', 'Обшивка вспорота, летят искры.'],
   'flavor.bionic.pierce': ['Корпус пробит!', 'Пробита обшивка, сыплются искры.'],
   'flavor.bionic.blunt': ['Сервопривод скрежещет.', 'Корпус сминается, искрит проводка.'],
+  'flavor.organic.fire': ['Пахнет палёным.', 'Кожа вздувается волдырями.'],
+  'flavor.organic.cold': ['Кожа белеет и немеет.', 'Кровь стынет в жилах.'],
+  'flavor.organic.lightning': ['Пахнет озоном.', 'Волосы встают дыбом.'],
+  'flavor.bionic.fire': ['Пахнет горелой изоляцией.', 'Капает расплавленный металл.'],
+  'flavor.bionic.cold': ['Смазка густеет на морозе.', 'Металл звенит от холода.'],
+  'flavor.bionic.lightning': ['Сыплются искры, пахнет горелой проводкой.', 'Индикаторы гаснут и вспыхивают снова.'],
 
   // ---------- Переход раны в новую стадию ----------
   'wound.organic.bruised': ['{tpart.nom} {adj:ушиблен@part}.', 'На {tpart.prep} наливается синяк.'],
@@ -298,6 +351,13 @@ export const TEMPLATES: Record<string, string[]> = {
 
   // ---------- Прочее ----------
   monsterNoticed: ['Ты замечаешь {creature.acc}.', 'Впереди {verb:появляться@creature} {creature.nom}.'],
+  'creatureSlowed.player': ['Холод сковывает твои движения.', 'Тело немеет от холода, ты двигаешься медленнее.'],
+  'creatureSlowed.monster': [
+    'Холод сковывает движения {creature.gen}.',
+    '{creature.nom} заметно {verb:замедляться@creature} от холода.',
+  ],
+  'slowEnded.player': ['Холод отступает, ты снова двигаешься свободно.', 'Тело оттаивает, ты снова двигаешься свободно.'],
+  'slowEnded.monster': ['{creature.nom} снова {verb:двигаться@creature} свободно.', 'Холод отпускает {creature.acc}.'],
   monsterFlees: ['{creature.nom} {verb:пытаться@creature} отступить.', '{creature.nom} {verb:пятиться@creature} назад.'],
   doorOpened: ['Ты открываешь дверь.'],
   'levelChanged.down': ['Ты спускаешься на уровень {level}.'],

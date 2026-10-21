@@ -7,6 +7,7 @@ import type { Creature, ItemInstance } from '../state'
 import { armourInSlot, equippedWeapon, partDef, planOf, skillLevel } from '../body'
 import { distributeKillXp, gainSkillXp, studyItemType } from '../knowledge'
 import { dropToFloor } from '../items'
+import { applySlow } from '../time'
 import {
   PLAYER_BASE_EVASION,
   SKILL_XP,
@@ -185,6 +186,9 @@ export function resolveAttack(
   const vitalDestroyed = def.tags.includes('vital') && part.hp <= 0
   if (vitalDestroyed || target.hp <= 0) {
     killCreature(ctx, target, attacker, vitalDestroyed ? 'vital' : 'hp', vitalDestroyed ? part.defId : undefined)
+  } else if (profile.damageType === 'cold' && damage > 0 && applySlow(target, state.now)) {
+    // Холод вместо лишнего урона замедляет выжившую цель.
+    ctx.events.push({ type: 'creatureSlowed', creature: actorRef(target) })
   }
   return true
 }

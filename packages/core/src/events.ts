@@ -72,6 +72,9 @@ export type GameEvent =
       partId?: string
     }
   | { type: 'monsterFlees'; creature: ActorRef }
+  /** Холод замедлил существо; slowEnded — замедление прошло. */
+  | { type: 'creatureSlowed'; creature: ActorRef }
+  | { type: 'slowEnded'; creature: ActorRef }
   | { type: 'shotFired'; attacker: ActorRef; weaponDefId: string; projectileDefId: string }
   | { type: 'projectileBroken'; projectileDefId: string }
   /** Снаряд никого не задел: упал на пол или ударился в стену. */

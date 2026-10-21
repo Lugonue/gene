@@ -79,6 +79,8 @@ export interface Creature {
   ai?: { mode: AiMode; lastSeen?: Pos; noticed?: boolean; trackUntil?: number }
   /** Отряд, с которым монстр появился на уровне. */
   squad?: string
+  /** До какого момента (aut) существо замедлено холодом. */
+  slowedUntil?: number
 }
 
 export type ItemLocation =

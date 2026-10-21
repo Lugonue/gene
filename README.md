@@ -88,7 +88,9 @@ pnpm lint
 Тексты боя и системных сообщений — в `packages/data/src/messages.ts` (`TEMPLATES`), код подстановки — в `packages/messages`.
 
 **Ключи** ищутся от точного к общему: `hit.<семейство>.<тип урона>.<тяжесть>.<материал>` → `hit.<семейство>.<тип урона>.<тяжесть>` → … → `hit`.
-Семейства атак: `weapon`, `bite`, `claws`, `fist`; типы урона: `slash`, `pierce`, `blunt`; тяжесть: `light`, `medium`, `heavy`.
+Семейства атак: `weapon`, `ranged`, `bite`, `claws`, `fist`; типы урона: `slash`, `pierce`, `blunt`; тяжесть: `light`, `medium`, `heavy`.
+Магические типы (`fire`, `cold`, `lightning`) описываются по стихии, без семейства: `hit.<тип>.<тяжесть>.<материал>`, `miss.<тип>`,
+`absorbed.<armour|bionic>.<тип>` (→ `absorbed.<armour|bionic>`).
 Для каждого ключа — список вариантов, вариант выбирается детерминированно (сид партии + ход).
 
 **Плейсхолдеры:**

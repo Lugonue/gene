@@ -28,6 +28,9 @@ export const DAMAGE_TYPE_LABELS: Record<DamageType, string> = {
   slash: 'рубящий',
   pierce: 'колющий',
   blunt: 'дробящий',
+  fire: 'огненный',
+  cold: 'ледяной',
+  lightning: 'электрический',
 }
 
 export const CATEGORY_LABELS: Record<ItemCategory, string> = {

@@ -6,6 +6,7 @@ import {
   BODY_PLANS,
   CATEGORY_GEN,
   ITEMS,
+  MAGIC_DAMAGE_TYPES,
   MATERIAL_NAMES,
   MONSTERS,
   PLAYER_WORDS,
@@ -16,6 +17,7 @@ import {
   VERBS,
   WOUND_LABELS,
   type Case,
+  type DamageType,
   type RejectReasonKey,
   type WordForms,
 } from '@gene/data'
@@ -126,6 +128,13 @@ function attackWords(attack: AttackRef): WordForms {
   return def.name
 }
 
+const MAGIC_DAMAGE = new Set<DamageType>(MAGIC_DAMAGE_TYPES)
+
+/** Сегменты ключа шаблона после hit/miss: магия описывается по стихии, остальное — по семейству и типу урона. */
+function attackKey(attack: AttackRef): string[] {
+  return MAGIC_DAMAGE.has(attack.damageType) ? [attack.damageType] : [attackFamily(attack), attack.damageType]
+}
+
 /** Семейство шаблонов атаки: weapon, ranged, bite, claws, fist. */
 export function attackFamily(attack: AttackRef): string {
   if (attack.kind === 'weapon' || attack.kind === 'ranged') return attack.kind
@@ -194,7 +203,7 @@ export function renderEvents(events: GameEvent[], viewerId: string, opts: Render
             tpart: { words: partWords(e.target.kind, e.partId), person: 3, owner: target },
           },
         }
-        push(msg(choose(rng, chain('miss', attackFamily(e.attack), e.attack.damageType), b), turn))
+        push(msg(choose(rng, chain('miss', ...attackKey(e.attack)), b), turn))
         break
       }
 
@@ -217,13 +226,13 @@ export function renderEvents(events: GameEvent[], viewerId: string, opts: Render
           roles.tarmour = { words: aw, person: 3, owner: target }
         }
         const b: Bindings = { subject: 'attacker', roles }
-        const family = attackFamily(e.attack)
         let text: string | undefined
         if (e.severity === 'absorbed' && (e.armourDefId || e.partMaterial === 'bionic')) {
-          text = choose(rng, [e.armourDefId ? 'absorbed.armour' : 'absorbed.bionic'], b)
+          const by = e.armourDefId ? 'absorbed.armour' : 'absorbed.bionic'
+          text = choose(rng, [`${by}.${e.attack.damageType}`, by], b)
         } else {
           const sev = e.severity === 'absorbed' ? 'light' : e.severity
-          text = choose(rng, chain('hit', family, e.attack.damageType, sev, e.partMaterial), b)
+          text = choose(rng, chain('hit', ...attackKey(e.attack), sev, e.partMaterial), b)
           if (e.absorbed > 0 && e.armourDefId) text += ' ' + choose(rng, ['absorb'], b)
           if (e.severity === 'heavy') {
             const flavor = choose(rng, chain('flavor', e.partMaterial, e.attack.damageType), b)
@@ -280,6 +289,14 @@ export function renderEvents(events: GameEvent[], viewerId: string, opts: Render
       case 'monsterFlees': {
         const b: Bindings = { subject: 'creature', roles: { creature: creatureRole(e.creature, viewerId) } }
         push(msg(choose(rng, [e.type], b), turn, 'narrative'))
+        break
+      }
+
+      case 'creatureSlowed':
+      case 'slowEnded': {
+        const creature = creatureRole(e.creature, viewerId)
+        const b: Bindings = { subject: 'creature', roles: { creature } }
+        push(msg(choose(rng, [`${e.type}.${creature.person === 2 ? 'player' : 'monster'}`], b), turn, 'narrative'))
         break
       }
 

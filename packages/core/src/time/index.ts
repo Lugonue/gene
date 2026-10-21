@@ -3,7 +3,7 @@
 // Ходит существо с наименьшим nextActAt; после действия nextActAt увеличивается на стоимость действия.
 import { MONSTERS } from '@gene/data'
 import type { Creature, GameState } from '../state'
-import { moveCostMultiplier } from '../combat/formulas'
+import { SLOW_COST_MUL, SLOW_DURATION, moveCostMultiplier } from '../combat/formulas'
 
 export type ActionKind = 'move' | 'attack' | 'wait' | 'item' | 'stairs'
 
@@ -17,11 +17,31 @@ export function creatureSpeed(c: Creature): number {
   return MONSTERS[c.kind]?.speed ?? NORMAL_SPEED
 }
 
-/** Стоимость действия (aut) с учётом скорости и ран (модификатор от ног — только для движения). */
+/** Стоимость действия (aut) с учётом скорости, ран (модификатор от ног — только для движения) и замедления. */
 export function actionCost(c: Creature, action: ActionKind): number {
   let cost = (BASE_ACTION_COST * NORMAL_SPEED) / creatureSpeed(c)
   if (action === 'move') cost *= moveCostMultiplier(c)
+  if (isSlowed(c)) cost *= SLOW_COST_MUL
   return Math.max(1, Math.round(cost))
+}
+
+// Замедление холодом: действия дороже в SLOW_COST_MUL раз в течение SLOW_DURATION aut (числа — в модуле формул).
+export function isSlowed(c: Creature): boolean {
+  return c.slowedUntil !== undefined && c.nextActAt < c.slowedUntil
+}
+
+/** Замедлить с момента now (повторный холод продлевает). Возвращает true, если существо не было замедлено. */
+export function applySlow(c: Creature, now: number): boolean {
+  const fresh = !isSlowed(c)
+  c.slowedUntil = Math.max(c.slowedUntil ?? 0, Math.max(now, c.nextActAt) + SLOW_DURATION)
+  return fresh
+}
+
+/** Снять истёкшее замедление. Возвращает true, если оно только что прошло. */
+export function expireSlow(c: Creature): boolean {
+  if (c.slowedUntil === undefined || isSlowed(c)) return false
+  delete c.slowedUntil
+  return true
 }
 
 export function spendTime(c: Creature, cost: number): void {

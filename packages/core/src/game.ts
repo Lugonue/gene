@@ -3,7 +3,7 @@
 import { reject, type ActionResult, type Ctx } from './context'
 import type { GameEvent } from './events'
 import { DIRS, creatureAt, player, tileAt, type Command, type Dir, type GameState } from './state'
-import { actionCost, nextActor, spendTime } from './time'
+import { actionCost, expireSlow, nextActor, spendTime } from './time'
 import { monsterTurn } from './ai'
 import { moveAction, stairsAction } from './actions/move'
 import { fireAction } from './actions/fire'
@@ -121,6 +121,9 @@ function runWorld(ctx: Ctx): void {
     const actor = nextActor(state, state.depth)
     if (!actor) return
     state.now = Math.max(state.now, actor.nextActAt)
+    // О конце замедления монстра сообщаем, только если игрок его видит.
+    if (expireSlow(actor) && (actor.kind === 'player' || actor.ai?.noticed))
+      ctx.events.push({ type: 'slowEnded', creature: actorRef(actor) })
     if (actor.kind === 'player') return
     const before = actor.nextActAt
     monsterTurn(ctx, actor)

@@ -19,3 +19,5 @@ Type: task
 - Тест сообщений: все части тела × новые типы × исходы.
 
 ## Comments
+
+- 2026-10-21: реализовано. Типы `fire`/`cold`/`lightning` в `DamageType` (`MagicDamageType`); множитель — `damageTypeMultiplier` в модуле формул (применяется в `rollDamage`); холод — `applySlow`/`isSlowed`/`expireSlow` в `core/src/time`, события `creatureSlowed`/`slowEnded`. Шаблоны магии не зависят от семейства атаки, так что для задачи 05 достаточно передать `damageType` в `AttackRef` заклинания; новый вид `AttackRef` (spell) и слова снаряда заклинания для `miss`/`absorb` не понадобятся, если не захочется упоминать само заклинание.

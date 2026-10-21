@@ -63,7 +63,10 @@ export interface CyborgConfigDef {
 
 // ---------- Атаки и монстры ----------
 
-export type DamageType = 'slash' | 'pierce' | 'blunt'
+/** Физические типы — оружие и естественные атаки; магические (fire, cold, lightning) — заклинания. */
+export const MAGIC_DAMAGE_TYPES = ['fire', 'cold', 'lightning'] as const
+export type MagicDamageType = (typeof MAGIC_DAMAGE_TYPES)[number]
+export type DamageType = 'slash' | 'pierce' | 'blunt' | MagicDamageType
 
 export interface NaturalAttackDef {
   id: string

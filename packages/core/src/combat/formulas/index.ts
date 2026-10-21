@@ -205,8 +205,23 @@ export function rollDamage(rng: RngState, ctx: AttackContext): number {
   dmg *= mods.damageMul
   dmg *= 1 + 0.1 * strength
   if (ctx.attack.weapon) dmg *= Math.max(0.4, durabilityEfficiency(ctx.attack.weapon))
+  if (ctx.part) dmg *= damageTypeMultiplier(ctx.attack.damageType, ctx.part.material)
   return Math.max(1, Math.round(dmg))
 }
+
+/** Огонь сильнее жжёт органику, молния — бионику. Холод лишнего урона не даёт, он замедляет (модуль времени). */
+const DAMAGE_TYPE_MUL: Partial<Record<DamageType, Partial<Record<Material, number>>>> = {
+  fire: { organic: 1.5 },
+  lightning: { bionic: 1.5 },
+}
+
+export function damageTypeMultiplier(type: DamageType, material: Material): number {
+  return DAMAGE_TYPE_MUL[type]?.[material] ?? 1
+}
+
+/** Замедление холодом (механизм — в модуле времени): длительность в aut и множитель стоимости действий. */
+export const SLOW_DURATION = 40
+export const SLOW_COST_MUL = 2
 
 /** Поглощение урона бронёй (с учётом прочности и навыка брони) и встроенной защитой бионики. */
 export function armourAbsorb(

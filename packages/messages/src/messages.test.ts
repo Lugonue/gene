@@ -3,9 +3,11 @@ import {
   ATTACKS,
   BODY_PLANS,
   ITEMS,
+  MAGIC_DAMAGE_TYPES,
   MONSTERS,
   PLAYER_WORDS,
   TEMPLATES,
+  type DamageType,
   type Material,
   type WordForms,
   type WoundStage,
@@ -303,3 +305,73 @@ describe('сообщения дальнего боя', () => {
   })
 })
 
+
+describe('сообщения магических типов урона', () => {
+  const MAGIC = MAGIC_DAMAGE_TYPES
+  /** Снаряд заклинания появится в задаче 05; текст магии не зависит от того, чем нанесён удар. */
+  const magic = (damageType: DamageType): AttackRef => ({ kind: 'natural', attackId: 'fist', damageType })
+
+  it('все части тела × новые типы × исходы — без плейсхолдеров, в обе стороны', () => {
+    for (const damageType of MAGIC) {
+      for (const kind of Object.keys(MONSTERS)) {
+        for (const plan of ['humanoid', 'humanoid_fourarmed'])
+          for (const part of BODY_PLANS[plan]!.parts)
+            for (const material of ['organic', 'bionic'] as Material[])
+              expectClean(combatEvents(mon(kind), PLAYER, magic(damageType), part.id, material))
+        for (const part of BODY_PLANS[MONSTERS[kind]!.bodyPlan]!.parts)
+          expectClean(combatEvents(PLAYER, mon(kind), magic(damageType), part.id, 'organic'))
+      }
+    }
+  })
+
+  it('минимум 2 варианта на каждый тип × тяжесть × материал и на промах', () => {
+    for (const type of MAGIC) {
+      expect(TEMPLATES[`miss.${type}`]!.length).toBeGreaterThanOrEqual(2)
+      for (const sev of ['light', 'medium', 'heavy'])
+        for (const material of ['organic', 'bionic'])
+          expect(TEMPLATES[`hit.${type}.${sev}.${material}`]!.length).toBeGreaterThanOrEqual(2)
+    }
+  })
+
+  const hit = (damageType: DamageType, material: Material, severity: HitSeverity): string[] => {
+    const texts = new Set<string>()
+    for (let turn = 0; turn < 20; turn++) {
+      const e: GameEvent = {
+        type: 'attackHit',
+        attacker: mon('goblin_shaman'),
+        target: PLAYER,
+        attack: magic(damageType),
+        partId: 'left_arm',
+        partMaterial: material,
+        damage: 4,
+        absorbed: 0,
+        severity,
+      }
+      texts.add(renderEvents([e], 'p', { turn })[0]!.text)
+    }
+    return [...texts]
+  }
+
+  it('ожог, обморожение, разряд и сбой бионики', () => {
+    for (const sev of ['medium', 'heavy'] as HitSeverity[]) {
+      expect(hit('fire', 'organic', sev).some((t) => /ожог/.test(t))).toBe(true)
+      expect(hit('cold', 'organic', sev).some((t) => /обморожени/.test(t))).toBe(true)
+      expect(hit('lightning', 'organic', sev).some((t) => /разряд/i.test(t))).toBe(true)
+      expect(hit('lightning', 'bionic', sev).every((t) => /сбой|замыкани/i.test(t))).toBe(true)
+    }
+    // Магия не «бьёт кулаком», даже если нанесена естественной атакой.
+    for (const type of MAGIC) for (const t of hit(type, 'organic', 'medium')) expect(t).not.toMatch(/кулак/)
+  })
+
+  it('замедление и его конец — для игрока и монстра', () => {
+    const text = (e: GameEvent): string => renderEvents([e], 'p')[0]!.text
+    expect(text({ type: 'creatureSlowed', creature: PLAYER })).toMatch(/ты|твои/i)
+    expect(text({ type: 'slowEnded', creature: PLAYER })).toMatch(/ты/i)
+    const events: GameEvent[] = []
+    for (const kind of Object.keys(MONSTERS))
+      events.push({ type: 'creatureSlowed', creature: mon(kind) }, { type: 'slowEnded', creature: mon(kind) })
+    expectClean(events)
+    expect(renderEvents(events, 'p').length).toBe(events.length)
+    expect(text({ type: 'creatureSlowed', creature: mon('goblin_shaman') })).toContain('шаман')
+  })
+})
