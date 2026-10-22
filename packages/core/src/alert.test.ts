@@ -128,6 +128,26 @@ describe('вспышка при ударе', () => {
     expect(hit(hitPlayer(45, 'danger'))).not.toHaveProperty('criticalFlash')
   })
 
+  it('смертельный удар — без вспышки и без события ступени', () => {
+    const state = newTestGame(5)
+    const p = player(state)
+    p.maxHp = 100
+    p.alert = 'critical'
+    const m = spawnMonster(state, 'hyena', p.depth, p.x + 1, p.y)
+    const ctx: Ctx = { state, events: [] }
+    for (let i = 0; i < 200 && !ctx.events.some((e) => e.type === 'attackHit'); i++) {
+      ctx.events = []
+      p.hp = 1
+      for (const part of p.parts) part.hp = part.maxHp = 1000
+      resolveAttack(ctx, m, p)
+    }
+    const h = hit(ctx.events)
+    expect(h.type === 'attackHit' && h.damage).toBeGreaterThan(0)
+    expect(state.status).not.toBe('active')
+    expect(h).not.toHaveProperty('criticalFlash')
+    expect(ctx.events.some((e) => e.type === 'alertChanged')).toBe(false)
+  })
+
   it('вспышка хода определяется по его событиям целиком (флаг сообщения клиенту)', () => {
     expect(turnFlashes(hitPlayer(26, 'danger'))).toBe(true)
     expect(turnFlashes(hitPlayer(20, 'critical'))).toBe(true)

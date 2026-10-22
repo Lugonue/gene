@@ -20,17 +20,26 @@ export function turnFlashes(events: GameEvent[]): boolean {
 }
 
 /**
- * Пересчитать ступень игрока после изменения целостности (урон, регенерация, лечение).
- * Смена ступени — событие alertChanged. Возвращает новую ступень (у монстров — всегда 'none').
+ * Ступень игрока после изменения целостности — единственное место, где она решается.
+ * undefined — не игрок или погиб (при гибели о ступени не сообщают и вспышку не дают).
  */
-export function updateAlert(ctx: Ctx, c: Creature): AlertStage {
-  if (c.kind !== 'player') return 'none'
+export function alertAfter(c: Creature): AlertStage | undefined {
+  if (c.kind !== 'player' || c.hp <= 0) return undefined
+  return nextAlertStage(alertStage(c), c.hp, c.maxHp)
+}
+
+/** Записать ступень, решённую alertAfter; смена — событие alertChanged. */
+export function setAlert(ctx: Ctx, c: Creature, to: AlertStage): void {
   const from = alertStage(c)
-  const to = nextAlertStage(from, c.hp, c.maxHp)
-  if (to === from) return to
+  if (to === from) return
   if (to === 'none') delete c.alert
   else c.alert = to
   const integrity = Math.max(0, Math.round((c.hp / c.maxHp) * 100))
   ctx.events.push({ type: 'alertChanged', from, to, integrity })
-  return to
+}
+
+/** Пересчитать ступень игрока после изменения целостности (урон, регенерация, лечение). */
+export function updateAlert(ctx: Ctx, c: Creature): void {
+  const to = alertAfter(c)
+  if (to !== undefined) setAlert(ctx, c, to)
 }

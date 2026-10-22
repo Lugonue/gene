@@ -22,6 +22,8 @@ export type HitSeverity = 'absorbed' | 'light' | 'medium' | 'heavy'
 
 /** Целостность и hp задетой части после удара. */
 export interface HitReadout {
+  /** Фактическая убыль целостности (урон с множителем торса). */
+  integrityLoss: number
   integrity: number
   maxIntegrity: number
   partHp: number

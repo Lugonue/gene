@@ -64,7 +64,7 @@ function handle(msg: ServerMsg): void {
         store.view = msg.view
         pushLog(msg.messages, msg.fresh === true)
         store.scene = nextScene(store.scene, msg.moments, msg.fresh === true)
-        store.flash = nextFlash(store.flash, msg)
+        store.flashSeq = nextFlash(store.flashSeq, msg)
         if (msg.fresh) store.screen = 'game'
       }
       if (store.pending !== null && msg.seq === store.pending) store.pending = null

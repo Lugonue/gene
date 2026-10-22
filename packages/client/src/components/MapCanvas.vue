@@ -124,7 +124,7 @@ watch(() => [store.view, store.inspect, store.anim, store.aim, store.projectile]
     />
     <!-- Слои тревоги поверх карты: не перехватывают мышь и не блокируют ввод. -->
     <div v-if="look.vignette" class="vignette" />
-    <div v-if="store.flash > 0" :key="store.flash" class="flash" />
+    <div v-if="store.flashSeq > 0" :key="store.flashSeq" class="flash" />
   </div>
 </template>
 

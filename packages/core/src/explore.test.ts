@@ -149,14 +149,19 @@ describe('ступени тревоги останавливают многох�
     expect(player(r.state).alert).toBe('danger')
   })
 
-  it('вход в ступень прерывает автоисследование и бег', () => {
-    const map = ['#'.repeat(42), '#@' + '.'.repeat(39) + '#', '#'.repeat(42)]
-    for (const cmd of [{ type: 'explore' }, { type: 'run', dir: 'e' }] as Command[]) {
-      const s = hurt(onMap(map))
-      const r = apply(s, cmd)
-      expect(r.events.some((e) => e.type === 'alertChanged')).toBe(true)
-      expect(player(r.state).x).toBe(2)
-    }
+  it('вход в ступень прерывает автоисследование', () => {
+    const s = hurt(onMap(['#'.repeat(42), '#@' + '.'.repeat(39) + '#', '#'.repeat(42)]))
+    const r = apply(s, { type: 'explore' })
+    expect(r.events.some((e) => e.type === 'alertChanged')).toBe(true)
+    expect(player(r.state).x).toBe(2)
+  })
+
+  it('вход в ступень прерывает бег', () => {
+    const s = hurt(onMap(['#'.repeat(42), '#@' + '.'.repeat(39) + '#', '#'.repeat(42)]))
+    const r = apply(s, { type: 'run', dir: 'e' })
+    expect(r.events.filter((e) => e.type === 'alertChanged')).toMatchObject([{ from: 'none', to: 'danger' }])
+    expect(player(r.state).x).toBe(2)
+    expect(player(r.state).alert).toBe('danger')
   })
 
   it('выход из ступени не прерывает отдых', () => {

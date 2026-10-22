@@ -347,12 +347,36 @@ describe('цифры входящего урона', () => {
     const hit = ctx.events.find((e) => e.type === 'attackHit')
     if (hit?.type !== 'attackHit') throw new Error('нет попадания')
     const part = findPart(p, hit.partId)!
-    expect(hit.readout).toEqual({ integrity: p.hp, maxIntegrity: 100_000, partHp: part.hp, partMaxHp: 100_000 })
+    expect(hit.readout).toEqual({ integrityLoss: 100_000 - p.hp, integrity: p.hp, maxIntegrity: 100_000, partHp: part.hp, partMaxHp: 100_000 })
 
     ctx.events = []
     for (let i = 0; i < 100 && !ctx.events.some((e) => e.type === 'attackHit'); i++) resolveAttack(ctx, p, g)
     const back = ctx.events.find((e) => e.type === 'attackHit')
     if (back?.type !== 'attackHit') throw new Error('нет попадания')
     expect(back.readout).toBeUndefined()
+  })
+
+  it('по искалеченному торсу убыль целостности в пометке — фактическая, больше урона по части', () => {
+    const s = newTestGame(5)
+    const p = player(s)
+    p.hp = p.maxHp = 100_000
+    for (const part of p.parts) part.hp = part.maxHp = 100_000
+    const torso = findPart(p, 'torso')!
+    torso.hp = 10_000
+    torso.wound = woundStageFor(torso)
+    expect(torso.wound).toBe('crippled')
+    const g = freshMonster(s, 'goblin_brute')
+
+    const ctx: Ctx = { state: s, events: [] }
+    let before = p.hp
+    for (let i = 0; i < 100 && !ctx.events.some((e) => e.type === 'attackHit' && e.damage > 1); i++) {
+      ctx.events = []
+      before = p.hp
+      resolveAttack(ctx, g, p)
+    }
+    const hit = ctx.events.find((e) => e.type === 'attackHit')
+    if (hit?.type !== 'attackHit' || !hit.readout) throw new Error('нет попадания')
+    expect(hit.readout.integrityLoss).toBe(before - p.hp)
+    expect(hit.readout.integrityLoss).toBeGreaterThan(hit.damage)
   })
 })
