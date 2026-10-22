@@ -5,6 +5,7 @@ import {
   ATTACKS,
   BODY_PLANS,
   CATEGORY_GEN,
+  DAMAGE_READOUT,
   ITEMS,
   MAGIC_DAMAGE_TYPES,
   MATERIAL_NAMES,
@@ -25,7 +26,17 @@ import {
   type SpellId,
   type WordForms,
 } from '@gene/data'
-import { createRng, pick, type ActorRef, type AlertStage, type AttackRef, type GameEvent, type LogMessage, type RngState } from '@gene/core'
+import {
+  createRng,
+  pick,
+  type ActorRef,
+  type AlertStage,
+  type AttackRef,
+  type GameEvent,
+  type HitReadout,
+  type LogMessage,
+  type RngState,
+} from '@gene/core'
 
 export interface RenderOptions {
   /** Номер хода — попадает в LogMessage и в сид выбора вариантов. */
@@ -248,7 +259,9 @@ export function renderEvents(events: GameEvent[], viewerId: string, opts: Render
             if (flavor) text += ' ' + flavor
           }
         }
-        push(msg(text, turn, 'narrative'))
+        const m = msg(text, turn, 'narrative')
+        if (m && e.readout && target.person === 2) m.note = damageNote(e, e.readout, pw)
+        push(m)
         break
       }
 
@@ -476,6 +489,15 @@ export function renderEvents(events: GameEvent[], viewerId: string, opts: Render
 }
 
 const ALERT_ORDER: AlertStage[] = ['none', 'danger', 'critical']
+
+/** «−7 · броня −3 · Целостность 18/40 · голова 3/12»; при полном поглощении — «урон заблокирован». */
+function damageNote(e: { damage: number; absorbed: number }, r: HitReadout, part: WordForms): string {
+  if (e.damage <= 0) return DAMAGE_READOUT.blocked
+  const parts = [`−${e.damage}`]
+  if (e.absorbed > 0) parts.push(`${DAMAGE_READOUT.armour} −${e.absorbed}`)
+  parts.push(`${DAMAGE_READOUT.integrity} ${r.integrity}/${r.maxIntegrity}`, `${part.nom} ${r.partHp}/${r.partMaxHp}`)
+  return parts.join(' · ')
+}
 
 function stageRank(s: string): number {
   return ['none', 'bruised', 'wounded', 'crippled', 'severed'].indexOf(s)

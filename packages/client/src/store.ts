@@ -76,6 +76,9 @@ export function pushLog(messages: LogMessage[], replace = false): void {
       last.count++
       last.turn = m.turn
       last.fresh = !replace
+      // Пометка (цифры урона) у свёрнутого повтора — от последнего удара.
+      if (m.note !== undefined) last.note = m.note
+      else delete last.note
       continue
     }
     store.log.push({ ...m, id: nextLogId++, fresh: !replace, count: 1 })

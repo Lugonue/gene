@@ -20,6 +20,14 @@ export type AttackRef =
 
 export type HitSeverity = 'absorbed' | 'light' | 'medium' | 'heavy'
 
+/** Целостность и hp задетой части после удара. */
+export interface HitReadout {
+  integrity: number
+  maxIntegrity: number
+  partHp: number
+  partMaxHp: number
+}
+
 export type RejectReason = RejectReasonKey
 
 export type GameEvent =
@@ -53,6 +61,8 @@ export type GameEvent =
       strong?: true
       /** Удар по игроку ввёл его в критическое состояние или пришёлся уже в нём: клиент даёт яркую вспышку по краю. */
       criticalFlash?: true
+      /** Только удар по игроку: состояние после удара — для цифр в журнале. */
+      readout?: HitReadout
     }
   | {
       type: 'woundChanged'

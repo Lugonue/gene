@@ -4,7 +4,7 @@ import type { Ctx } from '../context'
 import type { ActorRef, AttackRef } from '../events'
 import { pick } from '../rng'
 import type { Creature, ItemInstance } from '../state'
-import { armourInSlot, equippedWeapon, partDef, planOf, skillLevel, speciesOf } from '../body'
+import { armourInSlot, equippedWeapon, findPart, partDef, planOf, skillLevel, speciesOf } from '../body'
 import { distributeKillXp, gainSkillXp, studyItemType } from '../knowledge'
 import { dropToFloor } from '../items'
 import { applySlow } from '../time'
@@ -142,7 +142,7 @@ export function resolveAttack(
   )
   const absorbed = Math.min(raw, absorbedRoll)
   const damage = raw - absorbed
-  const split = splitDamage(damage)
+  const split = splitDamage(damage, findPart(target, 'torso'))
 
   const fromStage = part.wound
   part.hp = Math.max(0, part.hp - split.part)
@@ -164,6 +164,9 @@ export function resolveAttack(
     severity: hitSeverity(damage, part),
     ...(isStrongHit(damage, target.maxHp, fromStage, part.wound) ? { strong: true as const } : {}),
     ...(criticalFlash ? { criticalFlash: true as const } : {}),
+    ...(isPlayerTarget
+      ? { readout: { integrity: Math.max(0, target.hp), maxIntegrity: target.maxHp, partHp: part.hp, partMaxHp: part.maxHp } }
+      : {}),
   })
   if (stageIndex(part.wound) > stageIndex(fromStage)) {
     ctx.events.push({
@@ -190,8 +193,8 @@ export function resolveAttack(
     studyItemType(ctx, armour.def.id, STUDY_GAIN.armourHit)
   }
 
-  // Смерть: уничтожена vital-часть или общий HP ≤ 0.
-  const vitalDestroyed = def.tags.includes('vital') && part.hp <= 0
+  // Смерть: общий HP ≤ 0; монстр гибнет и от разрушения vital-части, киборг — нет (ADR 0003).
+  const vitalDestroyed = !isPlayerTarget && def.tags.includes('vital') && part.hp <= 0
   if (vitalDestroyed || target.hp <= 0) {
     killCreature(ctx, target, attacker, vitalDestroyed ? 'vital' : 'hp', vitalDestroyed ? part.defId : undefined)
   } else if (profile.damageType === 'cold' && damage > 0 && applySlow(target, state.now)) {

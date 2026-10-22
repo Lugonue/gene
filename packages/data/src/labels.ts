@@ -21,6 +21,8 @@ export const WOUND_LABELS: Record<Material, Record<WoundStage, string>> = {
 
 /** Бионическая часть с нулевым hp — «отказ». */
 export const BIONIC_FAILURE_LABEL = 'отказ'
+/** Органическая часть с нулевым hp — «разрушена». */
+export const ORGANIC_DESTROYED_LABEL = 'разрушена'
 
 export const MATERIAL_MARK: Record<Material, string> = { organic: '[О]', bionic: '[Б]' }
 
@@ -48,3 +50,6 @@ export const ROLE_LABELS: Record<MonsterRole, string> = {
 }
 
 export const STUDY_LABELS = { unknown: 'не изучен', partial: 'частично изучен', known: 'изучен' } as const
+
+/** Пометка с цифрами входящего урона в журнале (только удары по игроку). */
+export const DAMAGE_READOUT = { armour: 'броня', integrity: 'Целостность', blocked: 'урон заблокирован' } as const

@@ -11,6 +11,8 @@ export interface LogMessage {
   /** narrative — события мира; system — сообщения Ядра/диагностики (HUD); warning — отказы, ошибки. */
   kind: LogKind
   turn: number
+  /** Мелкая служебная пометка к записи (цифры урона); не входит в text, чтобы не мешать сворачиванию повторов. */
+  note?: string
 }
 
 /**
