@@ -3,9 +3,11 @@
 import {
   BIONIC_FAILURE_LABEL,
   DAMAGE_TYPE_LABELS,
+  FACTIONS,
   ITEMS,
   MONSTERS,
   PHENOMENA,
+  ROLE_LABELS,
   SKILLS,
   SKILL_IDS,
   SLOTS,
@@ -147,6 +149,22 @@ export interface PhenomenonView {
   recipe?: { name: string; description: string }
 }
 
+/** Встреченный вид монстра. Изученности видов нет. */
+export interface SpeciesView {
+  kind: string
+  name: string
+  glyph: string
+  color: string
+  /** Роль в отряде (подпись). */
+  role: string
+}
+
+/** Бестиарий: встреченные виды фракции в порядке встречи. */
+export interface BestiaryFactionView {
+  faction: string
+  species: SpeciesView[]
+}
+
 export interface EquipmentSlotView {
   slot: SlotId
   slotName: string
@@ -185,6 +203,8 @@ export interface PlayerView {
   itemTypes: ItemTypeView[]
   /** Явления в порядке обнаружения. */
   phenomena: PhenomenonView[]
+  /** Встреченные виды по фракциям; фракции — по глубине. */
+  bestiary: BestiaryFactionView[]
 }
 
 export function woundLabel(part: BodyPartState): string {
@@ -399,6 +419,17 @@ export function buildView(state: GameState): PlayerView {
     })
     .sort((a, b) => a.n - b.n)
 
+  const seen = (state.knowledge.species ?? []).flatMap((kind) => MONSTERS[kind] ?? [])
+  const bestiary: BestiaryFactionView[] = Object.values(FACTIONS)
+    .sort((a, b) => a.depth - b.depth)
+    .map((f) => ({
+      faction: f.name,
+      species: seen
+        .filter((def) => def.faction === f.id)
+        .map((def) => ({ kind: def.id, name: def.name.nom, glyph: def.glyph, color: def.color, role: ROLE_LABELS[def.role] })),
+    }))
+    .filter((f) => f.species.length > 0)
+
   return {
     status: state.status,
     depth: p.depth,
@@ -430,6 +461,7 @@ export function buildView(state: GameState): PlayerView {
     skills,
     itemTypes,
     phenomena,
+    bestiary,
   }
 }
 

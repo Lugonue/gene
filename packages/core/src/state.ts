@@ -111,6 +111,8 @@ export interface Knowledge {
   recentUse: Partial<Record<SkillId, number>>
   /** Явления. Нет в старых сохранениях. */
   phenomena?: Partial<Record<PhenomenonId, PhenomenonRecord>>
+  /** Встреченные виды монстров (id) в порядке первого появления в поле зрения. Нет в старых сохранениях. */
+  species?: string[]
 }
 
 /** Данные Ядра о явлении: накопленные данные и номер в порядке обнаружения (для условного имени). */

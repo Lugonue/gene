@@ -1,5 +1,5 @@
 // Подписи для интерфейса (не шаблоны сообщений — те в messages.ts).
-import type { DamageType, ItemCategory, Material, WoundStage } from './types'
+import type { DamageType, ItemCategory, Material, MonsterRole, WoundStage } from './types'
 
 /** Название стадии раны с учётом материала части тела. */
 export const WOUND_LABELS: Record<Material, Record<WoundStage, string>> = {
@@ -37,6 +37,14 @@ export const CATEGORY_LABELS: Record<ItemCategory, string> = {
   weapon: 'оружие',
   armour: 'броня',
   consumable: 'расходник',
+}
+
+export const ROLE_LABELS: Record<MonsterRole, string> = {
+  warrior: 'воин',
+  archer: 'стрелок',
+  mage: 'маг',
+  beast: 'зверь',
+  leader: 'вожак',
 }
 
 export const STUDY_LABELS = { unknown: 'не изучен', partial: 'частично изучен', known: 'изучен' } as const

@@ -70,10 +70,11 @@ export function stairsPos(state: GameState, tile: string): Pos {
   return pos
 }
 
-/** Партия на открытой арене: весь 1-й уровень — пол, монстров нет, игрок неуязвим и стоит в (20, 20). */
+/** Партия на открытой арене: весь 1-й уровень — пол, монстров нет (и бестиарий пуст), игрок неуязвим и стоит в (20, 20). */
 export function arenaGame(seed = 1): GameState {
   const s = newTestGame(seed)
   for (const id of Object.keys(s.creatures)) if (id !== s.playerId) delete s.creatures[id]
+  s.knowledge.species = []
   const level = s.levels[1]!
   const tiles = level.tiles.split('')
   for (let y = 0; y < level.height; y++)
