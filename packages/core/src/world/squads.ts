@@ -24,9 +24,9 @@ import {
   levelThreatBudget,
   monsterThreat,
 } from '../combat/formulas'
-import { speciesSkill } from '../body'
+import { speciesOf, speciesSkill } from '../body'
 import { chance, pick, randInt, weightedIndex, type RngState } from '../rng'
-import { speciesOf, type Creature, type GameState } from '../state'
+import type { Creature, GameState } from '../state'
 
 /**
  * Член отряда — один монстр со своим снаряжением. Связку «наездник + зверь» (ADR 0002) можно будет
@@ -100,10 +100,9 @@ export function speciesThreat(def: MonsterDef, gear: string[]): number {
     dodging: speciesSkill(def, 'dodging'),
     absorb: items.filter(isArmour).reduce((s, it) => s + it.absorb, 0),
     trait: FACTIONS[def.faction].trait,
-    spells: (def.spells ?? []).flatMap((id) => {
+    spells: (def.spells ?? []).map((id) => {
       const s = SPELLS[id]
-      if (!s) return []
-      return [{ amount: s.effect === 'heal' ? s.heal : s.damage, cooldown: s.cooldown }]
+      return { amount: s.effect === 'heal' ? s.heal : s.damage, cooldown: s.cooldown }
     }),
     spellPower: def.spellPower,
   })

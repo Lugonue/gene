@@ -4,7 +4,7 @@ import { computed } from 'vue'
 import { store } from '../store'
 import { sendCommand } from '../net'
 import { useKeys } from '../keys'
-import { useTargets, type Target, type TargetMode } from '../targets'
+import { targetsFor, type Target, type TargetMode } from '../targets'
 import Modal from './Modal.vue'
 
 const props = defineProps<{ mode: TargetMode }>()
@@ -13,7 +13,7 @@ const targets = computed<Target[]>(() => {
   const view = store.view
   const itemId = store.usingItemId
   if (!view || !itemId) return []
-  return useTargets(view, itemId, props.mode)
+  return targetsFor(view, itemId, props.mode)
 })
 
 function choose(t: Target): void {

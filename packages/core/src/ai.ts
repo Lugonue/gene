@@ -12,7 +12,6 @@ import {
   distance,
   player,
   setTile,
-  speciesOf,
   tileAt,
   type Creature,
   type Pos,
@@ -20,7 +19,7 @@ import {
 import { actionCost, spendTime } from './time'
 import { HEAL_ALLY_HP_SHARE, SEARCH_RADIUS, TRACK_TIME, fovRadius, wantsToFlee } from './combat/formulas'
 import { actorRef, resolveAttack } from './combat/attack'
-import { planOf } from './body'
+import { planOf, speciesOf } from './body'
 import { chance, pick } from './rng'
 import { computeFov, isPassable } from './world/fov'
 import { fire, readyToShoot, traceProjectile } from './combat/ranged'
@@ -121,10 +120,13 @@ function searchSpot(ctx: Ctx, c: Creature): Pos | undefined {
     return undefined
   }
   const level = ctx.state.levels[c.depth]!
+  // Только клетки, видимые с места поиска: за стену монстр в обход не ходит.
+  const seen = computeFov(level, from.x, from.y, SEARCH_RADIUS)
   const spots: Pos[] = []
   for (let y = from.y - SEARCH_RADIUS; y <= from.y + SEARCH_RADIUS; y++)
     for (let x = from.x - SEARCH_RADIUS; x <= from.x + SEARCH_RADIUS; x++)
-      if ((x !== c.x || y !== c.y) && isPassable(tileAt(level, x, y))) spots.push({ x, y })
+      if ((x !== c.x || y !== c.y) && seen.has(cellIndex(level, { x, y })) && isPassable(tileAt(level, x, y)))
+        spots.push({ x, y })
   return spots.length > 0 ? pick(ctx.state.rng, spots) : undefined
 }
 

@@ -3,6 +3,7 @@
 import { computed } from 'vue'
 import { store } from '../store'
 import { WOUND_COLORS } from '../colors'
+import { cellIndex } from '../grid'
 
 const TILE_NAMES: Record<string, string> = {
   '#': 'стена',
@@ -19,7 +20,7 @@ const info = computed(() => {
   const view = store.view
   const pos = store.inspect
   if (!view || !pos) return null
-  const i = pos.y * view.map.width + pos.x
+  const i = cellIndex(view.map.width, pos.x, pos.y)
   const vis = view.map.vis[i]
   const isPlayer = view.player.x === pos.x && view.player.y === pos.y
   return {

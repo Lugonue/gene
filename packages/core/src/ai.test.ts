@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { applyCommand } from './game'
 import { spawnMonster } from './monsters'
 import { arenaGame as arena } from './testing'
-import { player, type Creature, type GameState } from './state'
+import { TILE, distance, player, setTile, type Creature, type GameState } from './state'
+import { SEARCH_RADIUS } from './combat/formulas'
 import type { GameEvent } from './events'
 
 function waitTurns(s: GameState, n: number): { state: GameState; events: GameEvent[] } {
@@ -69,6 +70,26 @@ describe('черты поведения фракций', () => {
       found = Math.max(Math.abs(m.x - 20), Math.abs(m.y - 32)) <= 1
     }
     expect(found).toBe(true)
+  })
+
+  it('Орден осматривает только клетки, видимые с места, где видел игрока, а не обходит стену к клеткам за ней', () => {
+    for (const seed of [1, 2, 3, 4, 5]) {
+      let s = arena(seed)
+      // Стена под местом, где видели игрока; проход в ней далеко справа.
+      const level = s.levels[1]!
+      for (let x = 1; x <= 70; x++) setTile(level, x, 22, TILE.wall)
+      const c = spawnMonster(s, 'templar', 1, 25, 20)
+      s = waitTurns(s, 1).state
+      const p = player(s)
+      p.x = 5
+      p.y = 40
+      // Поиск длится TRACK_TIME (около 18 ходов) — проверяем, пока монстр ищет.
+      for (let i = 0; i < 18; i++) {
+        s = waitTurns(s, 1).state
+        const m = s.creatures[c.id]!
+        expect(distance(m, { x: 20, y: 20 })).toBeLessThanOrEqual(SEARCH_RADIUS)
+      }
+    }
   })
 
   it('кобольды отступают к союзнику, а не просто прочь от игрока', () => {

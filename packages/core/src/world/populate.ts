@@ -6,6 +6,7 @@ import { spawnMonster } from '../monsters'
 import { createItem } from '../items'
 import type { GeneratedLevel } from './mapgen'
 import { planSquads } from './squads'
+import { LEADER_ROOM_MIN_SQUAD } from '../combat/formulas'
 
 export function populateLevel(state: GameState, gen: GeneratedLevel): void {
   const depth = gen.level.depth
@@ -53,7 +54,7 @@ export function populateLevel(state: GameState, gen: GeneratedLevel): void {
  * Если такой нет нигде, вожак встаёт хоть один там, где больше места.
  */
 function leaderCells(rng: RngState, rooms: Pos[][], free: (p: Pos) => boolean, size: number): Pos[] {
-  const enough = Math.min(size, 2)
+  const enough = Math.min(size, LEADER_ROOM_MIN_SQUAD)
   const last = rooms[rooms.length - 1]
   if (!last) return []
   let best = clusterCells(rng, last.filter(free), size)

@@ -3,7 +3,7 @@ import * as ROT from 'rot-js'
 import { applyCommand } from './game'
 import { createGame, type NewGameOptions } from './create'
 import type { GameEvent } from './events'
-import { DIRS, TILE, player, tileAt, type Command, type Dir, type GameState, type Pos } from './state'
+import { DIRS, TILE, cellIndex, player, tileAt, type Command, type Dir, type GameState, type Pos } from './state'
 import { isPassable } from './world/fov'
 import { findTile } from './world/level'
 
@@ -80,7 +80,7 @@ export function arenaGame(seed = 1): GameState {
   for (let y = 0; y < level.height; y++)
     for (let x = 0; x < level.width; x++) {
       const border = x === 0 || y === 0 || x === level.width - 1 || y === level.height - 1
-      tiles[y * level.width + x] = border ? TILE.wall : TILE.floor
+      tiles[cellIndex(level, { x, y })] = border ? TILE.wall : TILE.floor
     }
   level.tiles = tiles.join('')
   const p = player(s)

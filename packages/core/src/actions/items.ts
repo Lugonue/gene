@@ -1,12 +1,12 @@
 // Действия с предметами: подобрать, бросить, надеть/снять, применить, разобрать.
 import { ITEMS, SLOTS, type SlotId } from '@gene/data'
 import { reject, type ActionResult, type Ctx } from '../context'
-import { INVENTORY_SIZE, itemsAt, player, type BodyPartState, type Creature, type ItemInstance } from '../state'
+import { INVENTORY_SIZE, itemsAt, player, type Creature, type ItemInstance } from '../state'
 import { actionCost } from '../time'
 import { findPart, isEquipped, slotsForItem } from '../body'
 import { destroyItem, dropToFloor, giveItem, needsSlot } from '../items'
 import { encounterItemType, gainSkillXp, studyItemType } from '../knowledge'
-import { healCreature } from '../health'
+import { healCreature, isDamagedPart, isFullyHealthy } from '../health'
 import {
   SKILL_XP,
   STUDY_GAIN,
@@ -92,16 +92,6 @@ export function unequipAction(ctx: Ctx, slot: SlotId): ActionResult {
 function consumeOne(ctx: Ctx, p: Creature, inst: ItemInstance): void {
   inst.count = (inst.count ?? 1) - 1
   if (inst.count <= 0) destroyItem(ctx.state, p, inst)
-}
-
-function isDamagedPart(part: BodyPartState): boolean {
-  return part.hp < part.maxHp || part.wound !== 'none' || !!part.needsTreatment
-}
-
-/** Зелью нечего лечить: общий HP полон и все органические части целы. */
-function isFullyHealthy(p: Creature): boolean {
-  if (p.hp < p.maxHp) return false
-  return !p.parts.some((part) => part.material === 'organic' && part.wound !== 'severed' && isDamagedPart(part))
 }
 
 export function useAction(ctx: Ctx, itemId: string, targetPartId?: string, targetItemId?: string): ActionResult {

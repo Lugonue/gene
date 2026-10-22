@@ -1,6 +1,6 @@
 // Замеченные объекты: предметы, лестницы и портал, впервые попавшие в поле зрения игрока,
 // и виды монстров для бестиария.
-import { player, TILE, type GameState } from '../state'
+import { cellIndex, player, TILE, type GameState } from '../state'
 
 export type FeatureKind = 'stairsDown' | 'stairsUp' | 'portal'
 
@@ -29,7 +29,7 @@ export function noticeObjects(state: GameState, visible: Set<number>): Noticed {
   const noticed = (state.noticedItems ??= {})
   const out: Noticed = { itemDefIds: [], features: [], species: [] }
 
-  const here = p.y * level.width + p.x
+  const here = cellIndex(level, p)
   for (const i of visible) {
     if (i === here || level.memory[i] !== ' ') continue
     const f = FEATURES[level.tiles[i] as string]
@@ -39,7 +39,7 @@ export function noticeObjects(state: GameState, visible: Set<number>): Noticed {
   for (const id of p.inventory) noticed[id] = true
   for (const it of Object.values(state.items)) {
     if (it.loc.kind !== 'floor' || it.loc.depth !== p.depth || noticed[it.id]) continue
-    if (!visible.has(it.loc.y * level.width + it.loc.x)) continue
+    if (!visible.has(cellIndex(level, it.loc))) continue
     noticed[it.id] = true
     out.itemDefIds.push(it.defId)
   }
@@ -47,7 +47,7 @@ export function noticeObjects(state: GameState, visible: Set<number>): Noticed {
   const species = (state.knowledge.species ??= [])
   for (const c of Object.values(state.creatures)) {
     if (c.kind === 'player' || c.depth !== p.depth || species.includes(c.kind)) continue
-    if (!visible.has(c.y * level.width + c.x)) continue
+    if (!visible.has(cellIndex(level, c))) continue
     species.push(c.kind)
     out.species.push(c.kind)
   }

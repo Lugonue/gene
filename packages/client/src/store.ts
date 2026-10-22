@@ -1,6 +1,7 @@
 // Реактивное состояние клиента. Игровое состояние только отображается — менять его может лишь сервер.
 import { reactive } from 'vue'
-import type { GameSummary, LogMessage, PlayerView, SceneMoment } from '@gene/core'
+import type { GameSummary, LogMessage, PlayerView } from '@gene/core'
+import type { SceneState } from './scene'
 
 export type Screen = 'connecting' | 'create' | 'game' | 'over'
 
@@ -49,8 +50,8 @@ export const store = reactive({
   projectile: null as { x: number; y: number; glyph: string; color: string } | null,
   /** Окно-сцена включено (клавиша c, помнится в localStorage). */
   sceneEnabled: true,
-  /** Текущая сцена; seq растёт с каждой новой сценой, чтобы перезапускать анимацию. */
-  scene: null as { moment: SceneMoment; seq: number } | null,
+  /** Текущая сцена (moment null — заставка); seq растёт с каждой сменой, чтобы перезапускать анимацию. */
+  scene: { moment: null, seq: 0 } as SceneState,
 })
 
 export interface AnimFrame {

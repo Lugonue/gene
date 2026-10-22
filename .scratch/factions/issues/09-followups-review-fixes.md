@@ -1,6 +1,6 @@
 # Исправления по ревью ветки feat/followups
 
-Status: ready-for-agent
+Status: resolved
 Type: task
 
 Ревью: `git diff b805a0f...feat/followups` (задачи factions/08, heal-ux/01, cutscene/01).
@@ -34,3 +34,11 @@ Type: task
 - `pnpm test`, `pnpm typecheck`, `pnpm lint` зелёные.
 
 ## Comments
+
+2026-10-22 — сделаны все 15 пунктов.
+- Сцена: состояние `SceneState` и чистая `nextScene` (`client/src/scene.ts`), счётчик монотонный и при `fresh`; после последнего кадра панель через `SCENE_HOLD_MS` возвращается к заставке `SCENE_IDLE`. Тесты в `scene.test.ts`.
+- `searchSpot`: только клетки из поля зрения с `searchFrom` (`computeFov`); тест в `ai.test.ts` (стена с проходом вдали — монстр не уходит в обход).
+- Ядро: `isDamagedPart`/`isFullyHealthy` перенесены в `health.ts`; в представлении `PartView.damaged` и `player.fullHealth`; `ItemView.damaged` неизученного — по показанному проценту. Тесты в `items.test.ts`.
+- Клиент: `useTargets` → `targetsFor`, читает флаги ядра; зелье при `fullHealth` не отправляется — «Я полностью здоров.». Фикстуры представления вручную (`client/src/testing.ts`), тесты `targets.test.ts`, `actions.test.ts` (в т.ч. бинт без ран).
+- Стандарты: `LEADER_ROOM_MIN_SQUAD` в формулах, `spellThreat` вместо `spellDamage` в угрозе, убрана мёртвая проверка в `squads.ts`, `speciesOf` перенесён в `body.ts`, `cellIndex` по всему core (сигнатура принимает `{ width }`), в клиенте свой `client/src/grid.ts`.
+- DECISIONS: разделены «ИИ магов»/«Явления», записаны решения heal-ux, поправлена запись об окне-сцене.

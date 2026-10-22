@@ -159,6 +159,28 @@ describe('материалы тела, лечение и ремонт', () => {
     expect(inv(r.state, 'heal_potion').count ?? 1).toBe(potion.count ?? 1)
   })
 
+  it('представление части тела несёт флаг повреждения по правилу ядра (в том числе «нужна перевязка»)', () => {
+    const s = newTestGame(34)
+    const view = (id: string): boolean | undefined => buildView(s).player.parts.find((pt) => pt.id === id)?.damaged
+    expect(view('torso')).toBe(false)
+    damage(findPart(player(s), 'torso')!, 0.4)
+    expect(view('torso')).toBe(true)
+    // Часть зажила до полного hp, но перевязки ещё ждёт — бинт к ней применим.
+    const head = findPart(player(s), 'head')!
+    head.needsTreatment = true
+    expect(view('head')).toBe(true)
+    const bandage = inv(s, 'bandage')
+    const r = applyCommand(s, { type: 'use', itemId: bandage.id, targetPartId: 'head' })
+    expect(r.events.some((e) => e.type === 'bandageApplied')).toBe(true)
+  })
+
+  it('представление сообщает «полностью здоров» по тому же правилу, что и отказ зелья', () => {
+    const s = newTestGame(34)
+    expect(buildView(s).player.fullHealth).toBe(true)
+    damage(findPart(player(s), 'torso')!, 0.4)
+    expect(buildView(s).player.fullHealth).toBe(false)
+  })
+
   it('зелье выпивается, если ранена часть тела при полном общем HP', () => {
     let s = newTestGame(34)
     clearMonsters(s)
@@ -251,6 +273,20 @@ describe('изучение снаряжения', () => {
     const jacket = view.equipment.find((e) => e.slot === 'body')!.item!
     expect(jacket.status).toBe('partial')
     expect(jacket.stats.absorb).toMatch(/–|~/)
+  })
+
+  it('флаг повреждения неизученного предмета следует показанному проценту, а не точной прочности', () => {
+    const s = newTestGame(51)
+    const p = player(s)
+    const axe = giveItem(s, p, createItem(s, 'axe', { kind: 'carried', owner: p.id }))
+    const view = (): ReturnType<typeof buildView>['inventory'][number] =>
+      buildView(s).inventory.find((i) => i.id === axe.id)!
+    axe.durability = axe.maxDurability! - 1
+    expect(view().durabilityText).toBe('~100%')
+    expect(view().damaged).toBeFalsy()
+    axe.durability = Math.floor(axe.maxDurability! * 0.8)
+    expect(view().durabilityText).toBe('~80%')
+    expect(view().damaged).toBe(true)
   })
 
   it('использование оружия продвигает и навык класса, и изученность типа', () => {

@@ -1,9 +1,9 @@
 // Действия интерфейса с предметами (собирают команды и открывают окна выбора цели).
-import { ITEMS } from '@gene/data'
+import { ITEMS, REJECT_TEXT } from '@gene/data'
 import type { ItemView } from '@gene/core'
 import { sendCommand } from './net'
 import { pushWarning, store } from './store'
-import { NO_TARGETS_TEXT, useTargets } from './targets'
+import { NO_TARGETS_TEXT, targetsFor } from './targets'
 
 /** Эффект применяемого расходника; у боеприпасов его нет — они тратятся при выстреле. */
 export function consumableEffect(item: ItemView): string | undefined {
@@ -17,12 +17,14 @@ export function useItem(item: ItemView): void {
   if (!effect) return
   if (effect === 'healPotion') {
     store.modal = null
-    sendCommand({ type: 'use', itemId: item.id })
+    // Лечить нечего — запрос не тратится (ядро всё равно откажет).
+    if (store.view?.player.fullHealth) pushWarning(REJECT_TEXT.fullHealth)
+    else sendCommand({ type: 'use', itemId: item.id })
     return
   }
   const mode = effect === 'bandage' ? 'bandage' : 'repair'
   // Применить не к чему — окно не открывается, ход не тратится.
-  if (store.view && useTargets(store.view, item.id, mode).length === 0) {
+  if (store.view && targetsFor(store.view, item.id, mode).length === 0) {
     store.modal = null
     pushWarning(NO_TARGETS_TEXT[mode])
     return

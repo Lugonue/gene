@@ -1,36 +1,43 @@
 <script setup lang="ts">
 // Окно-сцена: ASCII-анимация яркого момента хода. Играет фоном по таймеру, ввод не блокирует.
+// Последний кадр держится SCENE_HOLD_MS, затем панель возвращается к тихой заставке.
 import { onBeforeUnmount, ref, watch } from 'vue'
 import { store } from '../store'
-import { SCENE_FRAME_MS, sceneFrames, type SceneFrame } from '../scene'
+import { SCENE_FRAME_MS, SCENE_HOLD_MS, SCENE_IDLE, sceneFrames, type SceneFrame } from '../scene'
 
-const IDLE: SceneFrame = { lines: ['', '', '        · · ·', '', '', ''], color: '#1f3a44' }
-
-const frame = ref<SceneFrame>(IDLE)
+const frame = ref<SceneFrame>(SCENE_IDLE)
 let timer: ReturnType<typeof setInterval> | null = null
+let hold: ReturnType<typeof setTimeout> | null = null
 
 function stop(): void {
   if (timer) clearInterval(timer)
+  if (hold) clearTimeout(hold)
   timer = null
+  hold = null
 }
 
 function play(): void {
   stop()
-  if (!store.scene) {
-    frame.value = IDLE
+  const moment = store.scene.moment
+  if (!moment) {
+    frame.value = SCENE_IDLE
     return
   }
-  const frames = sceneFrames(store.scene.moment)
+  const frames = sceneFrames(moment)
   let i = 0
   frame.value = frames[0]!
   timer = setInterval(() => {
     i++
-    if (i >= frames.length) return stop()
-    frame.value = frames[i]!
+    if (i < frames.length) {
+      frame.value = frames[i]!
+      return
+    }
+    stop()
+    hold = setTimeout(() => (frame.value = SCENE_IDLE), SCENE_HOLD_MS)
   }, SCENE_FRAME_MS)
 }
 
-watch(() => store.scene?.seq, play, { immediate: true })
+watch(() => store.scene.seq, play, { immediate: true })
 onBeforeUnmount(stop)
 </script>
 

@@ -2,6 +2,7 @@
 import {
   BODY_PLANS,
   ITEMS,
+  MONSTERS,
   SKILLS,
   SLOTS,
   type ArmourDef,
@@ -14,8 +15,13 @@ import {
   type SlotId,
   type WeaponDef,
 } from '@gene/data'
-import { speciesOf, type BodyPartState, type Creature, type GameState, type ItemInstance } from './state'
+import type { BodyPartState, Creature, GameState, ItemInstance } from './state'
 import { skillLevelFromXp, stageIndex } from './combat/formulas'
+
+/** Вид монстра (у игрока вида нет). */
+export function speciesOf(c: Creature): MonsterDef | undefined {
+  return MONSTERS[c.kind]
+}
 
 export function planOf(c: Creature): BodyPlanDef {
   const plan = BODY_PLANS[c.bodyPlan]

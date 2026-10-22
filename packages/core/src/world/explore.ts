@@ -1,16 +1,16 @@
 // Автоисследование: следующий шаг к ближайшей неизвестной клетке. Путь — только по памяти карты.
-import { DIRS, TILE, type Dir, type LevelState, type Pos } from '../state'
+import { DIRS, TILE, cellIndex, type Dir, type LevelState, type Pos } from '../state'
 
 const DIR_LIST = Object.entries(DIRS) as [Dir, Pos][]
 
 function known(level: LevelState, x: number, y: number): boolean {
   if (x < 0 || y < 0 || x >= level.width || y >= level.height) return true
-  return level.memory[y * level.width + x] !== ' '
+  return level.memory[cellIndex(level, { x, y })] !== ' '
 }
 
 function walkable(level: LevelState, x: number, y: number): boolean {
   if (x < 0 || y < 0 || x >= level.width || y >= level.height) return false
-  const m = level.memory[y * level.width + x]
+  const m = level.memory[cellIndex(level, { x, y })]
   return m !== ' ' && m !== TILE.wall
 }
 

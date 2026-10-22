@@ -1,7 +1,8 @@
 // МОДУЛЬ-ЗАГЛУШКА: модель времени (см. README.md рядом).
 // Энергетическая модель в стиле DCSS: у каждого существа есть момент следующего хода nextActAt (aut).
 // Ходит существо с наименьшим nextActAt; после действия nextActAt увеличивается на стоимость действия.
-import { speciesOf, type Creature, type GameState } from '../state'
+import type { Creature, GameState } from '../state'
+import { speciesOf } from '../body'
 import { SLOW_COST_MUL, SLOW_DURATION, moveCostMultiplier } from '../combat/formulas'
 
 export type ActionKind = 'move' | 'attack' | 'wait' | 'item' | 'stairs'

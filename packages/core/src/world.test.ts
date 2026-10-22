@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { applyCommand } from './game'
-import { MAP_HEIGHT, MAP_WIDTH, TILE, player, setTile, tileAt, type Command, type Creature } from './state'
+import { MAP_HEIGHT, MAP_WIDTH, TILE, cellIndex, player, setTile, tileAt, type Command, type Creature } from './state'
 import { generateLevel } from './world/mapgen'
 import { createRng } from './rng'
 import { newTestGame, run, stairsPos, walkTo } from './testing'
@@ -247,7 +247,7 @@ describe('поле зрения', () => {
     const s = newTestGame(7)
     const v = buildView(s)
     const p = player(s)
-    expect(v.map.vis[p.y * v.map.width + p.x]).toBe('2')
+    expect(v.map.vis[cellIndex(v.map, p)]).toBe('2')
     const level = s.levels[1]!
     for (let i = 0; i < v.map.vis.length; i++) {
       if (v.map.vis[i] === '0') expect(v.map.tiles[i]).toBe(' ')

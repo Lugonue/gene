@@ -11,6 +11,12 @@ export interface SceneFrame {
 /** Пауза между кадрами, мс. */
 export const SCENE_FRAME_MS = 220
 
+/** Сколько держится последний кадр сцены перед возвратом к заставке, мс. */
+export const SCENE_HOLD_MS = 2500
+
+/** Тихая заставка панели в покое. */
+export const SCENE_IDLE: SceneFrame = { lines: ['', '', '        · · ·', '', '', ''], color: '#1f3a44' }
+
 /** Приоритет моментов: смерть > сильный удар > встреча. */
 const PRIORITY: Record<SceneMoment['kind'], number> = { death: 3, strongHit: 2, encounter: 1 }
 
@@ -19,6 +25,23 @@ export function pickScene(moments: SceneMoment[] | undefined): SceneMoment | und
   let best: SceneMoment | undefined
   for (const m of moments ?? []) if (!best || PRIORITY[m.kind] > PRIORITY[best.kind]) best = m
   return best
+}
+
+/** Состояние панели: текущий момент (null — заставка) и монотонный счётчик смен сцены. */
+export interface SceneState {
+  moment: SceneMoment | null
+  seq: number
+}
+
+/**
+ * Состояние после хода. Новый момент — новая сцена; полное обновление без моментов — заставка.
+ * Счётчик только растёт (в том числе при переподключении), чтобы панель всегда видела смену.
+ */
+export function nextScene(prev: SceneState, moments: SceneMoment[] | undefined, fresh: boolean): SceneState {
+  const moment = pickScene(moments)
+  if (moment) return { moment, seq: prev.seq + 1 }
+  if (fresh) return { moment: null, seq: prev.seq + 1 }
+  return prev
 }
 
 const WIDTH = 22
@@ -84,7 +107,7 @@ function encounterFrames(kind: string): SceneFrame[] {
   ]
 }
 
-/** Кадры сцены для момента; последний кадр остаётся на панели. */
+/** Кадры сцены для момента; последний держится SCENE_HOLD_MS, потом заставка. */
 export function sceneFrames(m: SceneMoment): SceneFrame[] {
   switch (m.kind) {
     case 'death':

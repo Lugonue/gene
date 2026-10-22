@@ -4,6 +4,7 @@ import { ITEMS, REJECT_TEXT, type WeaponDef } from '@gene/data'
 import type { PlayerView } from '@gene/core'
 import { pushWarning, store } from './store'
 import { sendCommand } from './net'
+import { cellIndex } from './grid'
 
 type Pos = { x: number; y: number }
 
@@ -34,7 +35,7 @@ export function aimPath(view: PlayerView, to: Pos, range: number): Pos[] {
     const x = from.x + Math.round((i * dx) / n)
     const y = from.y + Math.round((i * dy) / n)
     if (x < 0 || y < 0 || x >= width || y >= height) break
-    const t = tiles[y * width + x]
+    const t = tiles[cellIndex(width, x, y)]
     if (t === '#' || t === '+') break
     path.push({ x, y })
     if (view.monsters.some((m) => m.x === x && m.y === y)) break

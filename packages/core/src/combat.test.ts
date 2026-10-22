@@ -8,7 +8,7 @@ import { spawnMonster } from './monsters'
 import { mainHand, findPart } from './body'
 import { newTestGame } from './testing'
 import { buildView } from './view'
-import { player, type BodyPartState, type Creature, type GameState } from './state'
+import { cellIndex, player, type BodyPartState, type Creature, type GameState } from './state'
 import type { Ctx } from './context'
 
 function freshMonster(state: GameState, kind: string): Creature {
@@ -211,7 +211,7 @@ describe('монстры и ИИ', () => {
       const ok = [1, 2, 3].slice(0, Math.max(Math.abs(dx), Math.abs(dy))).every((k) => {
         const x = p.x + Math.sign(dx) * k
         const y = p.y + Math.sign(dy) * k
-        return level.tiles[y * level.width + x] === '.'
+        return level.tiles[cellIndex(level, { x, y })] === '.'
       })
       if (ok) {
         spot = { x: p.x + dx, y: p.y + dy }
@@ -235,7 +235,7 @@ describe('монстры и ИИ', () => {
     const all = Object.values(s.creatures).filter((c) => c.kind !== 'player' && c.depth === 1)
     expect(all.length).toBeGreaterThan(view.monsters.length)
     const level = s.levels[1]!
-    for (const m of view.monsters) expect(view.map.vis[m.y * level.width + m.x]).toBe('2')
+    for (const m of view.monsters) expect(view.map.vis[cellIndex(level, m)]).toBe('2')
     // Монстры других уровней — тоже нет: в view нет никаких id, кроме видимых.
     const json = JSON.stringify(view)
     for (const c of all) {

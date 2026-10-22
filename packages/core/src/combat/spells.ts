@@ -1,7 +1,8 @@
 // Заклинания монстров: перезарядка, усталость, срыв; снаряд летит механизмом дальнего боя. Числа — в ./formulas.
 import { SPELLS, type ProjectileSpellDef, type SpellDef } from '@gene/data'
 import type { Ctx } from '../context'
-import { speciesOf, type Creature, type GameState } from '../state'
+import type { Creature, GameState } from '../state'
+import { speciesOf } from '../body'
 import { chance } from '../rng'
 import { healCreature } from '../health'
 import { playerSeesAny } from '../view'

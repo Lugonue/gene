@@ -1,51 +1,39 @@
 import { describe, expect, it } from 'vitest'
-import { buildView, createGame, player, type GameState } from '@gene/core'
-import { NO_TARGETS_TEXT, useTargets } from './targets'
-
-function newGame(): GameState {
-  return createGame(34, { name: 'Тест-7', bodyPlan: 'humanoid', startWeapon: 'short_sword' })
-}
-
-function itemId(s: GameState, defId: string): string {
-  const id = player(s).inventory.find((i) => s.items[i]?.defId === defId)
-  if (!id) throw new Error(`нет ${defId}`)
-  return id
-}
-
-function part(s: GameState, defId: string) {
-  return player(s).parts.find((p) => p.defId === defId)!
-}
+import { NO_TARGETS_TEXT, targetsFor } from './targets'
+import { item, part, viewFixture } from './testing'
 
 describe('цели применения', () => {
   it('при полном здоровье у бинта нет целей', () => {
-    const s = newGame()
-    expect(useTargets(buildView(s), itemId(s, 'bandage'), 'bandage')).toEqual([])
+    expect(targetsFor(viewFixture(), 'i1', 'bandage')).toEqual([])
     expect(NO_TARGETS_TEXT.bandage).toBe('Я полностью здоров.')
   })
 
-  it('бинт предлагает только повреждённые органические части, цифры по видимому списку', () => {
-    const s = newGame()
-    const torso = part(s, 'torso')
-    torso.hp = Math.floor(torso.maxHp / 2)
-    torso.wound = 'wounded'
-    const head = part(s, 'head')
-    head.hp = head.maxHp - 1
-    head.wound = 'bruised'
-    const targets = useTargets(buildView(s), itemId(s, 'bandage'), 'bandage')
-    expect(targets.map((t) => [t.key, t.cmd])).toEqual([
-      ['1', { type: 'use', itemId: itemId(s, 'bandage'), targetPartId: 'head' }],
-      ['2', { type: 'use', itemId: itemId(s, 'bandage'), targetPartId: 'torso' }],
+  it('бинт предлагает только органические части с флагом повреждения от ядра, цифры по видимому списку', () => {
+    const view = viewFixture({
+      parts: [
+        part('head', { damaged: true, wound: 'bruised', hp: 9 }),
+        part('torso'),
+        // Полный hp, но ядро считает часть повреждённой (ждёт перевязки) — клиент верит флагу.
+        part('left_arm', { damaged: true }),
+        part('right_arm', { material: 'bionic', damaged: true, hp: 5 }),
+      ],
+    })
+    expect(targetsFor(view, 'i1', 'bandage').map((t) => [t.key, t.cmd])).toEqual([
+      ['1', { type: 'use', itemId: 'i1', targetPartId: 'head' }],
+      ['2', { type: 'use', itemId: 'i1', targetPartId: 'left_arm' }],
     ])
   })
 
-  it('ремкомплект предлагает только предметы с неполной прочностью', () => {
-    const s = newGame()
-    const kit = itemId(s, 'repair_kit')
-    const weaponId = player(s).equipment.weapon
-    expect(useTargets(buildView(s), kit, 'repair')).toEqual([])
-    const weapon = s.items[weaponId!]!
-    weapon.durability = weapon.maxDurability! - 1
-    const targets = useTargets(buildView(s), kit, 'repair')
-    expect(targets.map((t) => t.cmd)).toEqual([{ type: 'use', itemId: kit, targetItemId: weapon.id }])
+  it('ремкомплект предлагает повреждённую бионику и предметы с флагом повреждения', () => {
+    const sword = item('w1', 'short_sword', { letter: 'd', category: 'weapon', durabilityText: '49/50' })
+    expect(targetsFor(viewFixture({ inventory: [sword] }), 'i3', 'repair')).toEqual([])
+    const view = viewFixture({
+      parts: [part('right_arm', { material: 'bionic', damaged: true, hp: 5 })],
+      inventory: [{ ...sword, damaged: true }],
+    })
+    expect(targetsFor(view, 'i3', 'repair').map((t) => t.cmd)).toEqual([
+      { type: 'use', itemId: 'i3', targetPartId: 'right_arm' },
+      { type: 'use', itemId: 'i3', targetItemId: 'w1' },
+    ])
   })
 })

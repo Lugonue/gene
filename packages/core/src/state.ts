@@ -1,5 +1,5 @@
 // Игровое состояние. Обычный JSON-совместимый объект: без классов, без циклов, ссылки — по id.
-import { MONSTERS, type Material, type MonsterDef, type PhenomenonId, type SkillId, type SlotId, type WoundStage } from '@gene/data'
+import type { Material, PhenomenonId, SkillId, SlotId, WoundStage } from '@gene/data'
 import type { RngState } from './rng'
 
 export const MAP_WIDTH = 80
@@ -188,18 +188,13 @@ export function newId(state: GameState, prefix: string): string {
   return `${prefix}${state.nextId++}`
 }
 
-/** Вид монстра (у игрока вида нет). */
-export function speciesOf(c: Creature): MonsterDef | undefined {
-  return MONSTERS[c.kind]
-}
-
 /** Расстояние по Чебышёву: сколько шагов (с диагоналями) между клетками. */
 export function distance(a: Pos, b: Pos): number {
   return Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y))
 }
 
 /** Номер клетки уровня — как в строке tiles и в множествах видимых клеток. */
-export function cellIndex(level: LevelState, p: Pos): number {
+export function cellIndex(level: Pick<LevelState, 'width'>, p: Pos): number {
   return p.y * level.width + p.x
 }
 

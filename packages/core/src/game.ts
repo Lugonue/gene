@@ -2,7 +2,7 @@
 // Вход не мутируется: работаем с глубокой копией. Результат детерминирован (весь рандом — из state.rng).
 import { reject, type ActionResult, type Ctx } from './context'
 import type { GameEvent } from './events'
-import { DIRS, creatureAt, player, tileAt, type Command, type Dir, type GameState } from './state'
+import { DIRS, cellIndex, creatureAt, player, tileAt, type Command, type Dir, type GameState } from './state'
 import { actionCost, expireSlow, nextActor, spendTime } from './time'
 import { monsterTurn } from './ai'
 import { moveAction, stairsAction } from './actions/move'
@@ -142,7 +142,7 @@ function observe(ctx: Ctx): void {
   rememberVisible(level, visible)
   for (const c of Object.values(state.creatures)) {
     if (c.kind === 'player' || c.depth !== p.depth || !c.ai) continue
-    const seen = visible.has(c.y * level.width + c.x)
+    const seen = visible.has(cellIndex(level, c))
     if (seen && !c.ai.noticed) ctx.events.push({ type: 'monsterNoticed', creature: actorRef(c) })
     c.ai.noticed = seen
   }
@@ -157,7 +157,7 @@ function monstersInView(ctx: Ctx): boolean {
   const level = state.levels[p.depth]!
   const visible = computeFov(level, p.x, p.y, fovRadius(p))
   return Object.values(state.creatures).some(
-    (c) => c.kind !== 'player' && c.depth === p.depth && visible.has(c.y * level.width + c.x),
+    (c) => c.kind !== 'player' && c.depth === p.depth && visible.has(cellIndex(level, c)),
   )
 }
 

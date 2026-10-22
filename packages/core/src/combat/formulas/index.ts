@@ -516,12 +516,17 @@ const TRAIT_THREAT: Record<FactionTrait, number> = { cowardly: 0.9, fearless: 1.
 /** Вклад заклинания в угрозу: урон (лечение) × сила за столько aut, делённое на перезарядку. */
 const SPELL_THREAT_AUT = 20
 
+/** Вклад одного заклинания (урона или лечения) в угрозу: сила эффекта, приведённая к SPELL_THREAT_AUT по перезарядке. */
+function spellThreat(amount: number, cooldown: number, power = 1): number {
+  return (amount * power * SPELL_THREAT_AUT) / cooldown
+}
+
 /**
  * Угроза монстра: нападение (урон × навыки, плюс заклинания — чем сильнее и чаще, тем больше) плюс живучесть
  * (hp, броня, уклонение), × скорость и черта фракции.
  */
 export function monsterThreat(t: ThreatInput): number {
-  const spells = t.spells.reduce((s, sp) => s + (spellDamage(sp.amount, t.spellPower) * SPELL_THREAT_AUT) / sp.cooldown, 0)
+  const spells = t.spells.reduce((s, sp) => s + spellThreat(sp.amount, sp.cooldown, t.spellPower), 0)
   const offence = t.damage * (1 + 0.04 * t.attackSkill + 0.02 * t.fighting) + t.accuracy / 4 + spells
   const defence = t.maxHp / 4 + t.absorb + (t.evasion + 1.5 * t.dodging) / 3
   return Math.max(1, Math.round((offence + defence) * (t.speed / 10) * TRAIT_THREAT[t.trait]))
@@ -533,6 +538,8 @@ export function monsterThreat(t: ThreatInput): number {
 
 /** Сколько раз подряд отряд может не уложиться в остаток бюджета, прежде чем уровень считается заполненным. */
 export const SQUAD_FILL_MAX_MISSES = 20
+/** Сколько первых членов отряда вожака (вожак и воин или зверь) должны уместиться в его комнате, чтобы она годилась. */
+export const LEADER_ROOM_MIN_SQUAD = 2
 /** Наибольшая доля стрелков в отряде. */
 export const MAX_ARCHER_SHARE = 0.5
 /** Шанс надеть броню на каждый вид брони (голова, тело, руки, ноги), если она есть в наборе фракции. */

@@ -1,5 +1,5 @@
 import * as ROT from 'rot-js'
-import { TILE, tileAt, type LevelState } from '../state'
+import { TILE, cellIndex, tileAt, type LevelState } from '../state'
 
 export function blocksSight(t: string): boolean {
   return t === TILE.wall || t === TILE.doorClosed
@@ -17,7 +17,7 @@ export function computeFov(level: LevelState, x: number, y: number, radius: numb
     return !blocksSight(tileAt(level, cx, cy))
   })
   fov.compute(x, y, Math.max(1, radius), (cx, cy) => {
-    if (cx >= 0 && cy >= 0 && cx < level.width && cy < level.height) visible.add(cy * level.width + cx)
+    if (cx >= 0 && cy >= 0 && cx < level.width && cy < level.height) visible.add(cellIndex(level, { x: cx, y: cy }))
   })
   return visible
 }

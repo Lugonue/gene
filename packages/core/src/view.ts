@@ -20,7 +20,7 @@ import {
   type SlotId,
   type WoundStage,
 } from '@gene/data'
-import { isEquipped, partDef, skillLevel, slotsOf } from './body'
+import { isEquipped, partDef, skillLevel, slotsOf, speciesOf } from './body'
 import {
   durabilityEfficiency,
   fovRadius,
@@ -32,9 +32,9 @@ import {
   STUDY_THRESHOLDS,
 } from './combat/formulas'
 import { computeFov } from './world/fov'
+import { isDamagedPart, isFullyHealthy } from './health'
 import {
   cellIndex,
-  speciesOf,
   player,
   type BodyPartState,
   type Creature,
@@ -57,6 +57,8 @@ export interface PartView {
   label: string
   hp: number
   maxHp: number
+  /** Часть повреждена по правилу ядра (`isDamagedPart`): к ней применим бинт или ремкомплект. */
+  damaged: boolean
 }
 
 export interface VisiblePartView {
@@ -198,6 +200,8 @@ export interface PlayerView {
     maxHp: number
     bodyPlan: string
     fovRadius: number
+    /** Зелью нечего лечить (`isFullyHealthy`): общий HP полон и органические части целы. */
+    fullHealth: boolean
     parts: PartView[]
   }
   inventory: ItemView[]
@@ -266,17 +270,21 @@ export function itemView(state: GameState, inst: ItemInstance, owner?: Creature)
   const cur = inst.durability ?? 0
   const max = inst.maxDurability ?? 0
   view.effTier = effTier(inst)
-  if (cur < max) view.damaged = true
   const hidden = '??'
   if (status === 'known') {
     view.durabilityText = `${cur}/${max}`
     view.stats.maxDurability = String(max)
+    if (cur < max) view.damaged = true
   } else if (status === 'partial') {
     view.durabilityText = `~${approx5(cur)}/~${approx10(max)}`
     view.stats.maxDurability = `~${approx10(max)}`
+    if (cur < max) view.damaged = true
   } else {
-    view.durabilityText = `~${max > 0 ? approx10((cur / max) * 100) : 0}%`
+    // Флаг — по показанному проценту, иначе он выдал бы точную прочность неизученного предмета.
+    const percent = max > 0 ? approx10((cur / max) * 100) : 0
+    view.durabilityText = `~${percent}%`
     view.stats.maxDurability = hidden
+    if (percent < 100) view.damaged = true
   }
 
   if (def.category === 'weapon') {
@@ -334,7 +342,7 @@ export function buildView(state: GameState): PlayerView {
   const monsters: MonsterView[] = []
   for (const c of Object.values(state.creatures)) {
     if (c.kind === 'player' || c.depth !== p.depth) continue
-    if (!visible.has(c.y * level.width + c.x)) continue
+    if (!visible.has(cellIndex(level, c))) continue
     const def = speciesOf(c)
     if (!def) continue
     monsters.push({
@@ -360,7 +368,7 @@ export function buildView(state: GameState): PlayerView {
   const floorMap = new Map<number, FloorItemView>()
   for (const it of Object.values(state.items)) {
     if (it.loc.kind !== 'floor' || it.loc.depth !== p.depth) continue
-    const idx = it.loc.y * level.width + it.loc.x
+    const idx = cellIndex(level, it.loc)
     if (!visible.has(idx)) continue
     const def = ITEMS[it.defId]
     if (!def) continue
@@ -451,6 +459,7 @@ export function buildView(state: GameState): PlayerView {
       maxHp: p.maxHp,
       bodyPlan: p.bodyPlan,
       fovRadius: fovRadius(p),
+      fullHealth: isFullyHealthy(p),
       parts: p.parts.map((part) => ({
         id: part.defId,
         name: partDef(p, part).name.nom,
@@ -459,6 +468,7 @@ export function buildView(state: GameState): PlayerView {
         label: woundLabel(part),
         hp: part.hp,
         maxHp: part.maxHp,
+        damaged: isDamagedPart(part),
       })),
     },
     inventory,

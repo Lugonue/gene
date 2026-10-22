@@ -4,6 +4,7 @@ import { onMounted, ref, watch } from 'vue'
 import { store } from '../store'
 import { PLAYER_COLOR, TILE_COLORS } from '../colors'
 import { aimPath, heldRangedWeapon } from '../aim'
+import { cellIndex } from '../grid'
 
 const CELL_W = 12
 const CELL_H = 18
@@ -44,7 +45,7 @@ function draw(): void {
 
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
-      const i = y * width + x
+      const i = cellIndex(width, x, y)
       const v = vis[i]
       if (v === '0') continue
       const ch = tiles[i] as string

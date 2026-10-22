@@ -2,7 +2,7 @@
 // ROT.RNG — глобальный синглтон, поэтому перед генерацией засеваем его производным сидом из нашего ГПСЧ.
 import * as ROT from 'rot-js'
 import { chance, deriveSeed, type RngState } from '../rng'
-import { MAP_HEIGHT, MAP_WIDTH, MAX_DEPTH, TILE, type LevelState, type Pos } from '../state'
+import { MAP_HEIGHT, MAP_WIDTH, MAX_DEPTH, TILE, cellIndex, type LevelState, type Pos } from '../state'
 
 export interface GeneratedLevel {
   level: LevelState
@@ -18,6 +18,7 @@ export interface GeneratedLevel {
 export function generateLevel(rng: RngState, depth: number): GeneratedLevel {
   const width = MAP_WIDTH
   const height = MAP_HEIGHT
+  const grid = { width }
   let tiles: string[] = []
   let digger: InstanceType<typeof ROT.Map.Digger> | undefined
   // Нужны хотя бы 2 комнаты: лестницы вверх и вниз (портал) не должны совпадать.
@@ -26,7 +27,7 @@ export function generateLevel(rng: RngState, depth: number): GeneratedLevel {
     ROT.RNG.setSeed(deriveSeed(rng))
     digger = new ROT.Map.Digger(width, height, { dugPercentage: 0.3, roomWidth: [4, 11], roomHeight: [3, 7] })
     digger.create((x, y, wall) => {
-      if (!wall) tiles[y * width + x] = TILE.floor
+      if (!wall) tiles[cellIndex(grid, { x, y })] = TILE.floor
     })
     if (digger.getRooms().length >= 2) break
   }
@@ -43,7 +44,7 @@ export function generateLevel(rng: RngState, depth: number): GeneratedLevel {
   // Двери: на части входов в комнаты.
   for (const room of rooms) {
     room.getDoors((x, y) => {
-      if (tiles[y * width + x] === TILE.floor && chance(rng, 0.6)) tiles[y * width + x] = TILE.doorClosed
+      if (tiles[cellIndex(grid, { x, y })] === TILE.floor && chance(rng, 0.6)) tiles[cellIndex(grid, { x, y })] = TILE.doorClosed
     })
   }
 
@@ -59,14 +60,14 @@ export function generateLevel(rng: RngState, depth: number): GeneratedLevel {
   const result: GeneratedLevel = { level: { depth, width, height, tiles: '', memory: ' '.repeat(width * height) }, roomCells, start: first }
 
   if (depth > 1) {
-    tiles[first.y * width + first.x] = TILE.stairsUp
+    tiles[cellIndex(grid, first)] = TILE.stairsUp
     result.upStairs = first
   }
   if (depth < MAX_DEPTH) {
-    tiles[last.y * width + last.x] = TILE.stairsDown
+    tiles[cellIndex(grid, last)] = TILE.stairsDown
     result.downStairs = last
   } else {
-    tiles[last.y * width + last.x] = TILE.portal
+    tiles[cellIndex(grid, last)] = TILE.portal
     result.portal = last
   }
 

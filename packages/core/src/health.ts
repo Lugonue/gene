@@ -1,8 +1,19 @@
 // Регенерация и лечение (числа — в combat/formulas).
 import type { Ctx } from './context'
-import type { Creature } from './state'
+import type { BodyPartState, Creature } from './state'
 import { organicHealCap, regenTick, stageIndex, woundStageFor } from './combat/formulas'
 import { actorRef } from './combat/attack'
+
+/** Часть тела повреждена: hp неполный, есть стадия раны или ждёт перевязки. Одно правило для бинта, ремкомплекта, зелья и представления. */
+export function isDamagedPart(part: BodyPartState): boolean {
+  return part.hp < part.maxHp || part.wound !== 'none' || !!part.needsTreatment
+}
+
+/** Зелью нечего лечить: общий HP полон и все органические части целы. */
+export function isFullyHealthy(c: Creature): boolean {
+  if (c.hp < c.maxHp) return false
+  return !c.parts.some((part) => part.material === 'organic' && part.wound !== 'severed' && isDamagedPart(part))
+}
 
 /** Лечение (зелье, заклинание): общий HP и доля hp каждой органической части, не выше предела самолечения. */
 export function healCreature(c: Creature, heal: { hp: number; partFraction: number }): void {
