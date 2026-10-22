@@ -13,7 +13,7 @@ import {
   type WordForms,
   type WoundStage,
 } from '@gene/data'
-import type { ActorRef, AttackRef, GameEvent, HitSeverity } from '@gene/core'
+import type { ActorRef, AlertStage, AttackRef, GameEvent, HitSeverity } from '@gene/core'
 import { fill, partWords, renderEvents } from './index'
 
 const PLAYER: ActorRef = { id: 'p', kind: 'player' }
@@ -223,6 +223,44 @@ describe('сообщения: падежи и род (контрольные п�
   it('системные сообщения Ядра помечены как system', () => {
     const out = renderEvents([{ type: 'newItemType', itemDefId: 'mace' }], 'p')
     expect(out[0]).toMatchObject({ kind: 'system', text: '[ЯДРО] Новый тип оружия: булава. Анализ начат.' })
+  })
+})
+
+describe('сообщения Ядра о ступенях тревоги', () => {
+  const alert = (from: AlertStage, to: AlertStage, integrity: number): GameEvent => ({ type: 'alertChanged', from, to, integrity })
+
+  it('вход в ступень — системное сообщение Ядра, по несколько вариантов на ступень', () => {
+    for (const [from, to] of [
+      ['none', 'danger'],
+      ['none', 'critical'],
+      ['danger', 'critical'],
+    ] as [AlertStage, AlertStage][]) {
+      const texts = new Set<string>()
+      for (let turn = 0; turn < 40; turn++) {
+        const out = renderEvents([alert(from, to, 20)], 'p', { seed: 1, turn })
+        expect(out).toHaveLength(1)
+        expect(out[0]!.kind).toBe('system')
+        expect(out[0]!.text).toMatch(/^\[ЯДРО\] /)
+        expect(out[0]!.text).not.toMatch(/[{}]|стабилизирована/)
+        texts.add(out[0]!.text)
+      }
+      expect(texts.size, `${from}→${to}`).toBeGreaterThanOrEqual(2)
+    }
+    const critical = renderEvents([alert('danger', 'critical', 20)], 'p').map((m) => m.text)
+    const danger = renderEvents([alert('none', 'danger', 45)], 'p').map((m) => m.text)
+    expect(critical).not.toEqual(danger)
+  })
+
+  it('выход вниз по тяжести — «Целостность стабилизирована: N%»', () => {
+    for (const [from, to] of [
+      ['critical', 'danger'],
+      ['danger', 'none'],
+      ['critical', 'none'],
+    ] as [AlertStage, AlertStage][]) {
+      expect(renderEvents([alert(from, to, 31)], 'p')).toEqual([
+        { kind: 'system', turn: 0, text: '[ЯДРО] Целостность стабилизирована: 31%.' },
+      ])
+    }
   })
 })
 

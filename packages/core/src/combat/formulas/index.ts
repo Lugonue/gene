@@ -325,6 +325,33 @@ export function fatigueStage(fatigue: number): FatigueStage {
   return 'fresh'
 }
 
+// --- Ступени тревоги по целостности (только кибор) ---
+
+/** Ступень тревоги: none — спокойно, danger — опасное состояние, critical — критическое. */
+export type AlertStage = 'none' | 'danger' | 'critical'
+
+/** Пороги ступеней (доля целостности): вход при ≤ enter, выход при > exit. Зазор — гистерезис. */
+export const ALERT_THRESHOLDS: Record<Exclude<AlertStage, 'none'>, { enter: number; exit: number }> = {
+  danger: { enter: 0.5, exit: 0.55 },
+  critical: { enter: 0.25, exit: 0.3 },
+}
+
+const ALERT_ORDER: AlertStage[] = ['none', 'danger', 'critical']
+
+export function alertIndex(s: AlertStage): number {
+  return ALERT_ORDER.indexOf(s)
+}
+
+/** Ступень после изменения целостности: войти можно в любую ступень, а удержаться — пока доля не выше порога выхода. */
+export function nextAlertStage(current: AlertStage, hp: number, maxHp: number): AlertStage {
+  const frac = maxHp > 0 ? hp / maxHp : 0
+  const held = (s: Exclude<AlertStage, 'none'>): boolean =>
+    frac <= ALERT_THRESHOLDS[s].enter || (alertIndex(current) >= alertIndex(s) && frac <= ALERT_THRESHOLDS[s].exit)
+  if (held('critical')) return 'critical'
+  if (held('danger')) return 'danger'
+  return 'none'
+}
+
 /** Маг лечит союзника, у которого осталось меньше этой доли HP. */
 export const HEAL_ALLY_HP_SHARE = 0.6
 

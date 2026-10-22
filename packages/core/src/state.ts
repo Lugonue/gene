@@ -1,6 +1,7 @@
 // Игровое состояние. Обычный JSON-совместимый объект: без классов, без циклов, ссылки — по id.
 import type { Material, PhenomenonId, SkillId, SlotId, WoundStage } from '@gene/data'
 import type { RngState } from './rng'
+import type { AlertStage } from './combat/formulas'
 
 export const MAP_WIDTH = 80
 export const MAP_HEIGHT = 40
@@ -86,6 +87,8 @@ export interface Creature {
   slowedUntil?: number
   /** Колдовство монстра: усталость на момент fatigueAt (aut) и когда готово каждое заклинание. */
   magic?: { fatigue: number; fatigueAt: number; readyAt: Record<string, number> }
+  /** Ступень тревоги по целостности (только у игрока; нет — 'none', в т. ч. в старых сохранениях). */
+  alert?: AlertStage
 }
 
 export type ItemLocation =
