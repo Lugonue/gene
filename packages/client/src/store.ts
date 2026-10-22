@@ -53,6 +53,8 @@ export const store = reactive({
   sceneEnabled: true,
   /** Очередь сцен окна-сцены; seq растёт с каждым изменением после хода, epoch — при переподключении. */
   scene: { queue: [], seq: 0, epoch: 0 } as SceneState,
+  /** Номер последней вспышки по краю карты (смена номера перезапускает анимацию, 0 — вспышек не было). */
+  flash: 0,
 })
 
 export interface AnimFrame {
