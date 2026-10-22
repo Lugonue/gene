@@ -5,12 +5,15 @@ import {
   DAMAGE_TYPE_LABELS,
   ITEMS,
   MONSTERS,
+  PHENOMENA,
   SKILLS,
   SKILL_IDS,
   SLOTS,
   WOUND_LABELS,
+  phenomenonName,
   type ItemCategory,
   type Material,
+  type PhenomenonId,
   type SkillId,
   type SlotId,
   type WoundStage,
@@ -19,9 +22,11 @@ import { isEquipped, partDef, skillLevel, slotsOf } from './body'
 import {
   durabilityEfficiency,
   fovRadius,
+  phenomenonStatusFor,
   studyStatusFor,
   xpForSkillLevel,
   MAX_SKILL,
+  PHENOMENON_THRESHOLDS,
   STUDY_THRESHOLDS,
 } from './combat/formulas'
 import { computeFov } from './world/fov'
@@ -32,6 +37,7 @@ import {
   type GameState,
   type GameStatus,
   type ItemInstance,
+  type PhenomenonRecord,
   type StudyStatus,
 } from './state'
 
@@ -129,6 +135,18 @@ export interface ItemTypeView {
   progress: number
 }
 
+/** Явление в базе знаний. Ключ — номер обнаружения: id раскрыл бы настоящее название. */
+export interface PhenomenonView {
+  n: number
+  /** Имя по стадии: условное, с оценкой или настоящее. */
+  name: string
+  status: StudyStatus
+  /** Прогресс до открытия рецепта, 0..1. */
+  progress: number
+  /** Открытый рецепт (только у изученного явления). */
+  recipe?: { name: string; description: string }
+}
+
 export interface EquipmentSlotView {
   slot: SlotId
   slotName: string
@@ -165,6 +183,8 @@ export interface PlayerView {
   here: ItemView[]
   skills: SkillView[]
   itemTypes: ItemTypeView[]
+  /** Явления в порядке обнаружения. */
+  phenomena: PhenomenonView[]
 }
 
 export function woundLabel(part: BodyPartState): string {
@@ -363,6 +383,22 @@ export function buildView(state: GameState): PlayerView {
     }
   })
 
+  const phenomena: PhenomenonView[] = (
+    Object.entries(state.knowledge.phenomena ?? {}) as [PhenomenonId, PhenomenonRecord][]
+  )
+    .map(([id, { data, n }]) => {
+      const status = phenomenonStatusFor(data)
+      const view: PhenomenonView = {
+        n,
+        name: phenomenonName(id, n, status),
+        status,
+        progress: Math.min(1, data / PHENOMENON_THRESHOLDS.known),
+      }
+      if (status === 'known') view.recipe = { ...PHENOMENA[id].recipe }
+      return view
+    })
+    .sort((a, b) => a.n - b.n)
+
   return {
     status: state.status,
     depth: p.depth,
@@ -393,6 +429,7 @@ export function buildView(state: GameState): PlayerView {
     here,
     skills,
     itemTypes,
+    phenomena,
   }
 }
 

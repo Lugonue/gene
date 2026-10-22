@@ -9,6 +9,7 @@ import {
   MAGIC_DAMAGE_TYPES,
   MATERIAL_NAMES,
   MONSTERS,
+  PHENOMENA,
   PLAYER_WORDS,
   POSSESSIVE,
   REJECT_TEXT,
@@ -17,6 +18,7 @@ import {
   TEMPLATES,
   VERBS,
   WOUND_LABELS,
+  phenomenonCodeName,
   type Case,
   type DamageType,
   type RejectReasonKey,
@@ -426,6 +428,22 @@ export function renderEvents(events: GameEvent[], viewerId: string, opts: Render
         }
         const key = e.type === 'studyChanged' ? `studyChanged.${e.status}` : e.type
         push(msg(choose(rng, [key], b), turn, 'system'))
+        break
+      }
+
+      case 'phenomenonDiscovered':
+      case 'phenomenonStudyChanged': {
+        const def = PHENOMENA[e.phenomenon]
+        const vars = { code: phenomenonCodeName(e.phenomenon, e.n), partial: def.partialName, name: def.name }
+        const key = e.type === 'phenomenonStudyChanged' ? `${e.type}.${e.status}` : e.type
+        push(msg(choose(rng, [key], { roles: {}, vars }), turn, 'system'))
+        break
+      }
+
+      case 'recipeUnlocked': {
+        const { recipe } = PHENOMENA[e.phenomenon]
+        const vars = { recipe: recipe.name, description: recipe.description }
+        push(msg(choose(rng, [e.type], { roles: {}, vars }), turn, 'system'))
         break
       }
 

@@ -432,10 +432,24 @@ export const STUDY_GAIN = {
   disassemble: 25,
 }
 
-export function studyStatusFor(data: number): StudyStatus {
-  if (data >= STUDY_THRESHOLDS.known) return 'known'
-  if (data >= STUDY_THRESHOLDS.partial) return 'partial'
+function statusByThresholds(data: number, t: Record<Exclude<StudyStatus, 'unknown'>, number>): StudyStatus {
+  if (data >= t.known) return 'known'
+  if (data >= t.partial) return 'partial'
   return 'unknown'
+}
+
+export function studyStatusFor(data: number): StudyStatus {
+  return statusByThresholds(data, STUDY_THRESHOLDS)
+}
+
+/** Данные о явлении за порцию: заклинание в поле зрения, попадание по киборгу (сверх наблюдения), срыв. */
+export const PHENOMENON_GAIN = { observe: 2, hit: 5, fizzle: 2 }
+
+/** Пороги данных явления; на known открывается рецепт. */
+export const PHENOMENON_THRESHOLDS: Record<Exclude<StudyStatus, 'unknown'>, number> = { partial: 10, known: 30 }
+
+export function phenomenonStatusFor(data: number): StudyStatus {
+  return statusByThresholds(data, PHENOMENON_THRESHOLDS)
 }
 
 // ---------------------------------------------------------------------------

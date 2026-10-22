@@ -405,6 +405,11 @@ export const TEMPLATES: Record<string, string[]> = {
   newItemType: ['[ЯДРО] Новый тип {category}: {item.nom}. Анализ начат.'],
   'studyChanged.partial': ['[ЯДРО] Предварительный анализ: {item.nom}. Характеристики оценены приблизительно.'],
   'studyChanged.known': ['[ЯДРО] Анализ завершён: {item.nom}. Характеристики внесены в базу.'],
+  // Явления: {code} — условное имя с номером, {partial} — предварительная оценка, {name} — настоящее название.
+  phenomenonDiscovered: ['[ЯДРО] Зафиксировано неизвестное явление: {code}.'],
+  'phenomenonStudyChanged.partial': ['[ЯДРО] Поступили новые данные: {code}. Предварительная оценка: {partial}.'],
+  'phenomenonStudyChanged.known': ['[ЯДРО] Анализ завершён: {code} — {name}. Данные внесены в базу.'],
+  recipeUnlocked: ['[ЯДРО] Рецепт открыт: {recipe}. {description} Синтез пока недоступен.'],
   restInterrupted: ['Отдых прерван: рядом враг.'],
   restFinished: ['[ДИАГНОСТИКА] Отдых завершён.'],
   gameWon: ['[ЯДРО] Портал активирован. Возврат во временную линию…'],

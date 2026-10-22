@@ -1,5 +1,5 @@
 // Структурированные события, которые возвращает core. Превращение в текст — в @gene/messages.
-import type { DamageType, Material, RejectReasonKey, SkillId, SlotId, WoundStage } from '@gene/data'
+import type { DamageType, Material, PhenomenonId, RejectReasonKey, SkillId, SlotId, WoundStage } from '@gene/data'
 import type { StudyStatus } from './state'
 import type { FeatureKind } from './world/notice'
 import type { FatigueStage } from './combat/formulas'
@@ -101,6 +101,11 @@ export type GameEvent =
   | { type: 'skillUp'; skill: SkillId; level: number }
   | { type: 'newItemType'; itemDefId: string }
   | { type: 'studyChanged'; itemDefId: string; status: StudyStatus }
+  /** Ядро впервые зафиксировало явление; n — номер в условном имени («термическая аномалия №n»). */
+  | { type: 'phenomenonDiscovered'; phenomenon: PhenomenonId; n: number }
+  | { type: 'phenomenonStudyChanged'; phenomenon: PhenomenonId; n: number; status: Exclude<StudyStatus, 'unknown'> }
+  /** Явление изучено: рецепт открыт (пока только описание). */
+  | { type: 'recipeUnlocked'; phenomenon: PhenomenonId }
   | { type: 'restInterrupted' }
   | { type: 'restFinished' }
   | { type: 'itemsNoticed'; itemDefIds: string[] }

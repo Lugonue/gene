@@ -1,5 +1,5 @@
 // Игровое состояние. Обычный JSON-совместимый объект: без классов, без циклов, ссылки — по id.
-import type { Material, SkillId, SlotId, WoundStage } from '@gene/data'
+import type { Material, PhenomenonId, SkillId, SlotId, WoundStage } from '@gene/data'
 import type { RngState } from './rng'
 
 export const MAP_WIDTH = 80
@@ -109,6 +109,14 @@ export interface Knowledge {
   itemData: Record<string, number>
   /** Использование навыков с последнего убийства — для распределения опыта за убийство. */
   recentUse: Partial<Record<SkillId, number>>
+  /** Явления. Нет в старых сохранениях. */
+  phenomena?: Partial<Record<PhenomenonId, PhenomenonRecord>>
+}
+
+/** Данные Ядра о явлении: накопленные данные и номер в порядке обнаружения (для условного имени). */
+export interface PhenomenonRecord {
+  data: number
+  n: number
 }
 
 export type GameStatus = 'active' | 'dead' | 'won'

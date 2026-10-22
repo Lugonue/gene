@@ -423,3 +423,27 @@ describe('сообщения заклинаний монстров', () => {
     for (const t of tired) expect(t).not.toMatch(/усталост|перезаряд|%/i)
   })
 })
+
+describe('сообщения ядра о явлениях', () => {
+  const text = (e: GameEvent): string => renderEvents([e], 'p')[0]!.text
+
+  it('первое наблюдение — условное имя без настоящего названия', () => {
+    const out = renderEvents([{ type: 'phenomenonDiscovered', phenomenon: 'fireball', n: 1 }], 'p')
+    expect(out[0]).toMatchObject({
+      kind: 'system',
+      text: '[ЯДРО] Зафиксировано неизвестное явление: термическая аномалия №1.',
+    })
+  })
+
+  it('переходы стадий и открытый рецепт — голосом ядра', () => {
+    const partial = text({ type: 'phenomenonStudyChanged', phenomenon: 'frost_bolt', n: 2, status: 'partial' })
+    expect(partial).toMatch(/^\[ЯДРО\] .*криогенная аномалия №2/)
+    expect(partial).not.toMatch(/ледян/)
+    expect(text({ type: 'phenomenonStudyChanged', phenomenon: 'frost_bolt', n: 2, status: 'known' })).toMatch(
+      /^\[ЯДРО\] .*криогенная аномалия №2.*ледяная стрела/,
+    )
+    const recipe = renderEvents([{ type: 'recipeUnlocked', phenomenon: 'heal' }], 'p')[0]!
+    expect(recipe.kind).toBe('system')
+    expect(recipe.text).toMatch(/^\[ЯДРО\] Рецепт открыт: Ускоренная регенерация органики\. Органические части тела заживают быстрее\./)
+  })
+})

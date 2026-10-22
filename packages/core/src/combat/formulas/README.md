@@ -25,6 +25,7 @@
 | `partMaxHp(def, material, scale)` | hp части с учётом материала |
 | `skillLevelFromXp`, `SKILL_XP`, `killXp` | кривая навыков и источники опыта |
 | `studyStatusFor`, `STUDY_GAIN` | изученность типов предметов |
+| `phenomenonStatusFor`, `PHENOMENON_GAIN`, `PHENOMENON_THRESHOLDS` | изученность явлений: наблюдение +2, попадание по киборгу +5, срыв +2; частично — 10, изучено (рецепт) — 30 |
 | `wantsToFlee(rng, creature, trait?)` | желание монстра отступить (с учётом черты фракции: трусливые раньше, бесстрашные никогда) |
 | `fizzleChance(fatigue)`, `spellCooldown(base, fatigue)` | срыв заклинания (5% + 12% за единицу усталости, до 80%) и перезарядка × (1 + 0.35 × усталость) |
 | `FATIGUE_PER_CAST`, `recoverFatigue(fatigue, elapsed)`, `fatigueStage` | усталость: +1 за заклинание, −1 за 50 aut; ступени для сообщений (от 2 — устал, от 4 — выдохся) |
