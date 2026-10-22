@@ -1,6 +1,6 @@
 # Цифры входящего урона в журнале
 
-Status: ready-for-agent
+Status: resolved
 Type: task
 
 Спека: `../spec.md`.

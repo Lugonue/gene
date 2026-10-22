@@ -1,6 +1,6 @@
 # Киборг гибнет только от целостности; искалеченный торс усиливает урон
 
-Status: ready-for-agent
+Status: resolved
 Type: task
 
 Спека: `../spec.md`, ADR: `docs/adr/0003-kiborg-gibnet-tolko-ot-celostnosti.md`.
