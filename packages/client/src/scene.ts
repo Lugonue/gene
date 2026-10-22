@@ -104,13 +104,13 @@ const RED = '#ef4b4b'
 const GOLD = '#ffd24a'
 const CYAN = '#5ff0ff'
 
-/** Угроза вида относительно игрока: подпись и цвет по уровню 1–5. */
-export const THREAT_LABELS: Record<EncounterSpecies['threat'], { label: string; color: string }> = {
-  1: { label: 'слабый', color: '#8d949a' },
-  2: { label: 'слабее тебя', color: '#7bd88f' },
-  3: { label: 'равный', color: '#ffd24a' },
-  4: { label: 'опасный', color: '#ffb057' },
-  5: { label: 'смертельный', color: '#ef4b4b' },
+/** Цвет шкалы угрозы вида относительно игрока по уровню 1–5: от серого (слабый) до красного (смертельный). */
+export const THREAT_COLORS: Record<EncounterSpecies['threat'], string> = {
+  1: '#8d949a',
+  2: '#7bd88f',
+  3: '#ffd24a',
+  4: '#ffb057',
+  5: '#ef4b4b',
 }
 
 /** Шкала угрозы: ▮ на каждый уровень из пяти. */
@@ -167,15 +167,14 @@ function scanFrames(count: number): SceneFrame[] {
 /** Карточка одного нового вида: глиф в рамке, имя и угроза. */
 function singleCard(seen: EncounterSpecies): SceneFrame[] {
   const s = species(seen.species)
-  const t = THREAT_LABELS[seen.threat]
   const box = ['        +----------+', '        |          |', '        |    M     |', '        |          |', '        +----------+']
-  const threat = center(`УГРОЗА ${threatBar(seen.threat)} ${t.label}`)
+  const threat = center(`УГРОЗА ${threatBar(seen.threat)}`)
   return [
     fit({ lines: [...fill(box, s.glyph), '', center('НОВЫЙ ВИД')], color: s.color }),
     fit({
       lines: [...fill(box, s.glyph), center(s.name), threat],
       color: s.color,
-      lineColors: [...Array<undefined>(SCENE_HEIGHT - 1), t.color],
+      lineColors: [...Array<undefined>(SCENE_HEIGHT - 1), THREAT_COLORS[seen.threat]],
     }),
   ]
 }
@@ -190,7 +189,7 @@ function groupCard(seen: EncounterSpecies[]): SceneFrame[] {
     const s = species(x.species)
     const name = [...s.name].slice(0, SCENE_WIDTH - 11).join('').padEnd(SCENE_WIDTH - 11)
     lines.push(` ${s.glyph}  ${name} ${threatBar(x.threat)}`)
-    lineColors.push(THREAT_LABELS[x.threat].color)
+    lineColors.push(THREAT_COLORS[x.threat])
   }
   if (shown.length < seen.length) {
     lines.push(center(`…и ещё ${seen.length - shown.length}`))
