@@ -1,6 +1,7 @@
 // Протокол клиент ↔ сервер (WebSocket, JSON).
 import type { Command } from './state'
 import type { PlayerView } from './view'
+import type { SceneMoment } from './scene'
 
 export type LogKind = 'narrative' | 'system' | 'warning'
 
@@ -55,6 +56,8 @@ export type ServerMsg =
       fresh?: boolean
       frames?: MoveFrame[]
       projectiles?: ProjectileTrail[]
+      /** Яркие моменты хода для окна-сцены (сцену выбирает клиент). */
+      moments?: SceneMoment[]
     }
   | { type: 'gameOver'; summary: GameSummary }
   | { type: 'error'; message: string; seq?: number }

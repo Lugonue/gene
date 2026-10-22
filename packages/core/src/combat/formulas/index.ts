@@ -247,6 +247,17 @@ export function hitSeverity(damage: number, part: BodyPartState): 'absorbed' | '
   return 'light'
 }
 
+/** Порог сильного удара (для окна-сцены): доля от максимума общего HP цели. */
+export const STRONG_HIT_FRACTION = 0.25
+
+/** Сильный удар: урон не меньше порога от максимума HP цели или часть тела впервые ранена тяжело (искалечена и хуже). */
+export function isStrongHit(damage: number, targetMaxHp: number, from: WoundStage, to: WoundStage): boolean {
+  if (damage <= 0) return false
+  const heavy = stageIndex('crippled')
+  if (stageIndex(to) >= heavy && stageIndex(from) < heavy) return true
+  return damage >= targetMaxHp * STRONG_HIT_FRACTION
+}
+
 /** Как урон распределяется между частью тела и общим пулом HP. */
 export function splitDamage(damage: number): { part: number; total: number } {
   return { part: damage, total: damage }

@@ -1,6 +1,6 @@
 # Панель-сцена: сильный удар, смерть монстра, первая встреча
 
-Status: ready-for-agent
+Status: resolved
 Type: task
 
 Спека: `../spec.md`.
@@ -18,3 +18,5 @@ Type: task
 - Выключенная панель не показывается и остаётся выключенной после перезагрузки.
 
 ## Comments
+
+- 2026-10-22: реализовано. Ядро: флаг `strong` в `attackHit` (`isStrongHit`, порог 25% максимума HP цели или переход части в «искалечена»/хуже), событие `speciesDiscovered`, `sceneMoments` → поле `moments` в `view`. Клиент: `scene.ts` (выбор по приоритету, кадры, переключатель в `localStorage`), `ScenePanel.vue` над HUD, клавиша `c`. Текст лога для `speciesDiscovered` не добавлялся — о виде и так сообщает «замечен монстр».

@@ -29,6 +29,8 @@ export type GameEvent =
   | { type: 'levelChanged'; depth: number; dir: 'down' | 'up' }
   | { type: 'blocked' }
   | { type: 'monsterNoticed'; creature: ActorRef }
+  /** Вид впервые попал в бестиарий (kind — id монстра). */
+  | { type: 'speciesDiscovered'; kind: string }
   | {
       type: 'attackMissed'
       attacker: ActorRef
@@ -47,6 +49,8 @@ export type GameEvent =
       absorbed: number
       armourDefId?: string
       severity: HitSeverity
+      /** Сильный удар (порог — isStrongHit в модуле формул): повод для окна-сцены. */
+      strong?: true
     }
   | {
       type: 'woundChanged'

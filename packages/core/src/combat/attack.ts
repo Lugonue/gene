@@ -17,6 +17,7 @@ import {
   durabilityEfficiency,
   durabilityWear,
   hitSeverity,
+  isStrongHit,
   rollDamage,
   rollHit,
   splitDamage,
@@ -158,6 +159,7 @@ export function resolveAttack(
     absorbed,
     ...(armour && absorbed > 0 ? { armourDefId: armour.def.id } : {}),
     severity: hitSeverity(damage, part),
+    ...(isStrongHit(damage, target.maxHp, fromStage, part.wound) ? { strong: true as const } : {}),
   })
   if (stageIndex(part.wound) > stageIndex(fromStage)) {
     ctx.events.push({

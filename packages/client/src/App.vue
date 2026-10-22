@@ -6,6 +6,8 @@ import { skipAnimation } from './anim'
 import { keyAction } from './input'
 import MapCanvas from './components/MapCanvas.vue'
 import HudPanel from './components/HudPanel.vue'
+import ScenePanel from './components/ScenePanel.vue'
+import { loadSceneEnabled, saveSceneEnabled } from './scene'
 import MessageLog from './components/MessageLog.vue'
 import CreateCharacter from './components/CreateCharacter.vue'
 import GameOver from './components/GameOver.vue'
@@ -100,10 +102,15 @@ function onKey(ev: KeyboardEvent): void {
     case 'open':
       store.modal = action.what
       break
+    case 'toggleScene':
+      store.sceneEnabled = !store.sceneEnabled
+      saveSceneEnabled(localStorage, store.sceneEnabled)
+      break
   }
 }
 
 onMounted(() => {
+  store.sceneEnabled = loadSceneEnabled(localStorage)
   connect()
   window.addEventListener('keydown', onKey)
 })
@@ -122,7 +129,10 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
         <InspectPanel />
         <MessageLog />
       </div>
-      <HudPanel />
+      <div class="side">
+        <ScenePanel v-if="store.sceneEnabled" />
+        <HudPanel />
+      </div>
       <InventoryModal v-if="store.modal === 'inventory'" />
       <EquipmentModal v-else-if="store.modal === 'equipment'" />
       <PickItemModal v-else-if="store.modal === 'use'" mode="use" />
@@ -168,6 +178,15 @@ body {
   flex-direction: column;
   flex: 1;
   min-width: 0;
+}
+.side {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.side > .hud {
+  flex: 1;
+  min-height: 0;
 }
 .map-wrap {
   flex: 1;
