@@ -127,10 +127,12 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
       <div class="main">
         <div class="map-wrap"><MapCanvas @hover="onHover" @pick="onPick" /></div>
         <InspectPanel />
-        <MessageLog />
+        <div class="bottom">
+          <MessageLog />
+          <ScenePanel v-if="store.sceneEnabled" />
+        </div>
       </div>
       <div class="side">
-        <ScenePanel v-if="store.sceneEnabled" />
         <HudPanel />
       </div>
       <InventoryModal v-if="store.modal === 'inventory'" />
@@ -176,6 +178,13 @@ body {
 .main {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+.bottom {
+  display: flex;
+}
+.bottom > .log {
   flex: 1;
   min-width: 0;
 }

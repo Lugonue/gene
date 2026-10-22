@@ -52,11 +52,15 @@ onBeforeUnmount(stop)
   padding: 6px 10px;
   background: #02080b;
   border-left: 1px solid #1f3a44;
-  border-bottom: 1px solid #1f3a44;
+  border-top: 1px solid #1f3a44;
+  box-sizing: border-box;
+  height: 150px;
+  display: flex;
+  align-items: center;
 }
 pre {
   margin: 0;
-  height: 7.5em;
+  max-height: 100%;
   overflow: hidden;
   font-family: Consolas, 'DejaVu Sans Mono', monospace;
   font-size: 14px;
