@@ -1,6 +1,6 @@
 # Лечение без лишних действий
 
-Status: needs-triage
+Status: resolved
 Type: task
 
 ## Идея
@@ -19,3 +19,4 @@ Type: task
 - Должна ли проверка тратить ход (нет — по умолчанию)?
 
 ## Comments
+- 2026-10-22: проработано, перенесено в `.scratch/heal-ux/`.

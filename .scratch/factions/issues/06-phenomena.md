@@ -1,6 +1,6 @@
 # Явления: данные Ядра и описания рецептов
 
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: 05
 
@@ -24,3 +24,4 @@ Blocked by: 05
 ## Comments
 
 - 2026-10-22: реализовано (`data/src/phenomena.ts` — имена, оценки и рецепты; `studyPhenomenon` в `core/src/knowledge.ts`; данные копит `castSpell`; формулы `PHENOMENON_GAIN`/`PHENOMENON_THRESHOLDS`). Для задачи 07: `PlayerView.phenomena` — `{ n, name, status, progress, recipe? }` в порядке обнаружения; ключ — номер `n`, id явления наружу не отдаётся.
+- 2026-10-22: закрыто, коммит `9e9a6bb`.

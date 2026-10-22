@@ -1,6 +1,6 @@
 # Окно-сцена с ASCII-анимацией боя и событий
 
-Status: needs-triage
+Status: resolved
 Type: research
 
 ## Идея
@@ -18,3 +18,4 @@ Type: research
 - Опция отключения для тех, кто хочет играть быстро.
 
 ## Comments
+- 2026-10-22: проработано, перенесено в `.scratch/cutscene/`.

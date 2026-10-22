@@ -1,6 +1,6 @@
 # База знаний: вкладки «Явления» и «Бестиарий»
 
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: 01, 06
 
@@ -22,3 +22,4 @@ Blocked by: 01, 06
 ## Comments
 
 - 2026-10-22: реализовано. Вкладки окна `m` (`SkillsModal.vue`): «Навыки и снаряжение», «Явления», «Бестиарий»; переключение 1–3, ←/→, Tab/Shift+Tab. Встреченные виды — `Knowledge.species` (отмечаются в `noticeObjects`), в `PlayerView.bestiary` — по фракциям в порядке глубины, с ролью (`ROLE_LABELS`).
+- 2026-10-22: закрыто, коммит `b805a0f`.

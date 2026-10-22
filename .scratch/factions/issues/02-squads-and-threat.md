@@ -1,6 +1,6 @@
 # Отряды, угроза и случайное снаряжение
 
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: 01
 
@@ -25,3 +25,4 @@ Blocked by: 01
 ## Comments
 
 - 2026-10-20: реализовано (`core/src/world/squads.ts`, расстановка в `populate.ts`). Фиксированное `MonsterDef.equipment` удалено, `spawnMonster` принимает снаряжение параметром. Стрелки до задачи 03 получают короткий клинок: в `ROLE_GEAR.archer.weaponSkills` нужно будет добавить навыки дальнего боя, а в наборы фракций — луки/арбалеты/пращи/копья.
+- 2026-10-22: закрыто, коммит `0c47d33`.
