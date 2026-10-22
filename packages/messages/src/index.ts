@@ -28,9 +28,9 @@ import {
 } from '@gene/data'
 import {
   createRng,
+  isAlertRaised,
   pick,
   type ActorRef,
-  type AlertStage,
   type AttackRef,
   type GameEvent,
   type HitReadout,
@@ -470,8 +470,7 @@ export function renderEvents(events: GameEvent[], viewerId: string, opts: Render
         break
 
       case 'alertChanged': {
-        const raised = ALERT_ORDER.indexOf(e.to) > ALERT_ORDER.indexOf(e.from)
-        const key = raised ? `alertChanged.${e.to}` : 'alertChanged.stable'
+        const key = isAlertRaised(e) ? `alertChanged.${e.to}` : 'alertChanged.stable'
         push(msg(choose(rng, [key], { roles: {}, vars: { integrity: String(e.integrity) } }), turn, 'system'))
         break
       }
@@ -488,12 +487,13 @@ export function renderEvents(events: GameEvent[], viewerId: string, opts: Render
   return out
 }
 
-const ALERT_ORDER: AlertStage[] = ['none', 'danger', 'critical']
-
-/** «−7 · броня −3 · Целостность 18/40 · голова 3/12»; при полном поглощении — «урон заблокирован». */
+/**
+ * «−7 · броня −3 · Целостность 18/40 · голова 3/12»: первое число — убыль целостности (с множителем торса).
+ * При полном поглощении — «урон заблокирован».
+ */
 function damageNote(e: { damage: number; absorbed: number }, r: HitReadout, part: WordForms): string {
   if (e.damage <= 0) return DAMAGE_READOUT.blocked
-  const parts = [`−${e.damage}`]
+  const parts = [`−${r.integrityLoss}`]
   if (e.absorbed > 0) parts.push(`${DAMAGE_READOUT.armour} −${e.absorbed}`)
   parts.push(`${DAMAGE_READOUT.integrity} ${r.integrity}/${r.maxIntegrity}`, `${part.nom} ${r.partHp}/${r.partMaxHp}`)
   return parts.join(' · ')

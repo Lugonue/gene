@@ -20,6 +20,6 @@ export function alertLook(alert: AlertStage): AlertLook {
  * Номер вспышки после хода: растёт, когда ход принёс флаг вспышки (смена номера перезапускает анимацию).
  * Полный вид после переподключения вспышку не запускает.
  */
-export function nextFlash(flash: number, msg: { criticalFlash?: true; fresh?: boolean }): number {
-  return msg.criticalFlash && !msg.fresh ? flash + 1 : flash
+export function nextFlash(flashSeq: number, msg: { criticalFlash?: true; fresh?: boolean }): number {
+  return msg.criticalFlash && !msg.fresh ? flashSeq + 1 : flashSeq
 }

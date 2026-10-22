@@ -356,7 +356,7 @@ describe('цифры входящего урона в журнале', () => {
     damage: 7,
     absorbed: 0,
     severity: 'medium',
-    readout: { integrity: 18, maxIntegrity: 40, partHp: 3, partMaxHp: 12 },
+    readout: { integrityLoss: 7, integrity: 18, maxIntegrity: 40, partHp: 3, partMaxHp: 12 },
     ...over,
   })
   const hitMsg = (e: GameEvent) => renderEvents([e], 'p')[0]!
@@ -370,6 +370,11 @@ describe('цифры входящего урона в журнале', () => {
   it('броня что-то поглотила — фрагмент про броню', () => {
     const m = hitMsg(blow({ absorbed: 3, armourDefId: ARMOURS[0]!.id }))
     expect(m.note).toBe('−7 · броня −3 · Целостность 18/40 · голова 3/12')
+  })
+
+  it('первое число — убыль целостности (с множителем торса), а не урон по части', () => {
+    const m = hitMsg(blow({ damage: 6, readout: { integrityLoss: 9, integrity: 18, maxIntegrity: 40, partHp: 3, partMaxHp: 12 } }))
+    expect(m.note).toBe('−9 · Целостность 18/40 · голова 3/12')
   })
 
   it('полное поглощение — «урон заблокирован» без цифр', () => {

@@ -8,7 +8,7 @@ import { armourInSlot, equippedWeapon, findPart, partDef, planOf, skillLevel, sp
 import { distributeKillXp, gainSkillXp, studyItemType } from '../knowledge'
 import { dropToFloor } from '../items'
 import { applySlow } from '../time'
-import { alertStage, updateAlert } from '../alert'
+import { alertAfter, setAlert } from '../alert'
 import {
   PLAYER_BASE_EVASION,
   SKILL_XP,
@@ -19,7 +19,6 @@ import {
   durabilityWear,
   hitSeverity,
   isStrongHit,
-  nextAlertStage,
   rollDamage,
   rollHit,
   splitDamage,
@@ -149,7 +148,7 @@ export function resolveAttack(
   target.hp -= split.total
   part.wound = woundStageFor(part)
   if (part.material === 'organic' && part.wound === 'crippled') part.needsTreatment = true
-  const criticalFlash = isPlayerTarget && nextAlertStage(alertStage(target), target.hp, target.maxHp) === 'critical'
+  const alertTo = alertAfter(target)
 
   ctx.events.push({
     type: 'attackHit',
@@ -163,9 +162,17 @@ export function resolveAttack(
     ...(armour && absorbed > 0 ? { armourDefId: armour.def.id } : {}),
     severity: hitSeverity(damage, part),
     ...(isStrongHit(damage, target.maxHp, fromStage, part.wound) ? { strong: true as const } : {}),
-    ...(criticalFlash ? { criticalFlash: true as const } : {}),
+    ...(alertTo === 'critical' ? { criticalFlash: true as const } : {}),
     ...(isPlayerTarget
-      ? { readout: { integrity: Math.max(0, target.hp), maxIntegrity: target.maxHp, partHp: part.hp, partMaxHp: part.maxHp } }
+      ? {
+          readout: {
+            integrityLoss: split.total,
+            integrity: Math.max(0, target.hp),
+            maxIntegrity: target.maxHp,
+            partHp: part.hp,
+            partMaxHp: part.maxHp,
+          },
+        }
       : {}),
   })
   if (stageIndex(part.wound) > stageIndex(fromStage)) {
@@ -180,8 +187,8 @@ export function resolveAttack(
       maxHp: part.maxHp,
     })
   }
-  // Ступень тревоги игрока; при гибели (целостность ≤ 0) сообщать о ней незачем.
-  if (target.hp > 0) updateAlert(ctx, target)
+  // Ступень тревоги игрока (при гибели её нет — alertAfter).
+  if (alertTo !== undefined) setAlert(ctx, target, alertTo)
 
   // 6. Износ.
   if (profile.weapon) applyWear(ctx, attacker, profile.weapon, durabilityWear({ damage, armoured: !!armour }, profile.weapon, 'weapon'))
