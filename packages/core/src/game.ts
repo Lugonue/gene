@@ -146,6 +146,7 @@ function observe(ctx: Ctx): void {
     if (seen && !c.ai.noticed) ctx.events.push({ type: 'monsterNoticed', creature: actorRef(c) })
     c.ai.noticed = seen
   }
+  for (const kind of noticed.species) ctx.events.push({ type: 'speciesDiscovered', kind })
   for (const feature of noticed.features) ctx.events.push({ type: 'featureNoticed', feature })
   if (noticed.itemDefIds.length > 0) ctx.events.push({ type: 'itemsNoticed', itemDefIds: noticed.itemDefIds })
 }

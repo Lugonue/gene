@@ -13,6 +13,8 @@ const FEATURES: Record<string, FeatureKind> = {
 export interface Noticed {
   itemDefIds: string[]
   features: FeatureKind[]
+  /** Виды, впервые записанные в бестиарий. */
+  species: string[]
 }
 
 /**
@@ -25,7 +27,7 @@ export function noticeObjects(state: GameState, visible: Set<number>): Noticed {
   const p = player(state)
   const level = state.levels[p.depth]!
   const noticed = (state.noticedItems ??= {})
-  const out: Noticed = { itemDefIds: [], features: [] }
+  const out: Noticed = { itemDefIds: [], features: [], species: [] }
 
   const here = p.y * level.width + p.x
   for (const i of visible) {
@@ -45,7 +47,9 @@ export function noticeObjects(state: GameState, visible: Set<number>): Noticed {
   const species = (state.knowledge.species ??= [])
   for (const c of Object.values(state.creatures)) {
     if (c.kind === 'player' || c.depth !== p.depth || species.includes(c.kind)) continue
-    if (visible.has(c.y * level.width + c.x)) species.push(c.kind)
+    if (!visible.has(c.y * level.width + c.x)) continue
+    species.push(c.kind)
+    out.species.push(c.kind)
   }
   return out
 }

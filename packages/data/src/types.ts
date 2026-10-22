@@ -241,6 +241,8 @@ export type RejectReasonKey =
   | 'bandageOnBionic'
   | 'repairOnOrganic'
   | 'notDamaged'
+  | 'fullHealth'
+  | 'nothingToRepair'
   | 'notUsable'
   | 'equippedItem'
   | 'nothingToExplore'

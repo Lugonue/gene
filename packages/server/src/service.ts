@@ -4,6 +4,7 @@ import {
   applyCommand,
   buildView,
   createGame,
+  sceneMoments,
   validateNewGame,
   type ClientMsg,
   type Command,
@@ -189,6 +190,7 @@ export class GameService {
 
     const over = game.state.status !== 'active'
     if (over || game.sinceSnapshot >= this.snapshotEvery) this.snapshot(game)
+    const moments = sceneMoments(r.events, game.state.playerId)
     conn.send({
       type: 'view',
       seq,
@@ -196,6 +198,7 @@ export class GameService {
       messages,
       ...(r.frames ? { frames: r.frames } : {}),
       ...(r.projectiles ? { projectiles: r.projectiles } : {}),
+      ...(moments.length > 0 ? { moments } : {}),
     })
     if (over) {
       conn.send({ type: 'gameOver', summary: summarize(game.state, game.log) })

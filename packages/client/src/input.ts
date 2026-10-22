@@ -62,6 +62,7 @@ export type KeyAction =
   | { kind: 'open'; what: 'inventory' | 'equipment' | 'skills' | 'help' | 'use' | 'drop' | 'disassemble' }
   | { kind: 'look' }
   | { kind: 'fire' }
+  | { kind: 'toggleScene' }
   | { kind: 'nextTarget'; back: boolean }
   | { kind: 'confirm' }
   | { kind: 'escape' }
@@ -111,6 +112,8 @@ export function keyAction(ev: KeyboardEvent): KeyAction | undefined {
       return { kind: 'look' }
     case 'f':
       return { kind: 'fire' }
+    case 'c':
+      return { kind: 'toggleScene' }
   }
   return undefined
 }

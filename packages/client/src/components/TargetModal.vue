@@ -1,50 +1,19 @@
 <script setup lang="ts">
-// Выбор цели: бинт — органическая часть тела; ремкомплект — предмет снаряжения или бионическая часть тела.
+// Выбор цели: только цели, к которым предмет применим (список — в targets.ts).
 import { computed } from 'vue'
-import type { Command } from '@gene/core'
 import { store } from '../store'
 import { sendCommand } from '../net'
 import { useKeys } from '../keys'
-import { EFF_COLORS, WOUND_COLORS } from '../colors'
+import { useTargets, type Target, type TargetMode } from '../targets'
 import Modal from './Modal.vue'
 
-const props = defineProps<{ mode: 'bandage' | 'repair' }>()
-
-interface Target {
-  key: string
-  label: string
-  detail: string
-  color: string
-  cmd: Command
-}
+const props = defineProps<{ mode: TargetMode }>()
 
 const targets = computed<Target[]>(() => {
   const view = store.view
   const itemId = store.usingItemId
   if (!view || !itemId) return []
-  const list: Target[] = []
-  const material = props.mode === 'bandage' ? 'organic' : 'bionic'
-  for (const part of view.player.parts.filter((p) => p.material === material)) {
-    list.push({
-      key: String(list.length + 1),
-      label: `${part.material === 'bionic' ? '[Б]' : '[О]'} ${part.name}`,
-      detail: `${part.label} ${part.hp}/${part.maxHp}`,
-      color: WOUND_COLORS[part.wound],
-      cmd: { type: 'use', itemId, targetPartId: part.id },
-    })
-  }
-  if (props.mode === 'repair') {
-    for (const it of view.inventory.filter((i) => i.category !== 'consumable')) {
-      list.push({
-        key: it.letter ?? '',
-        label: `${it.name}${it.equippedSlot ? ' (надет)' : ''}`,
-        detail: it.durabilityText ?? '',
-        color: EFF_COLORS[it.effTier ?? 4]!,
-        cmd: { type: 'use', itemId, targetItemId: it.id },
-      })
-    }
-  }
-  return list
+  return useTargets(view, itemId, props.mode)
 })
 
 function choose(t: Target): void {

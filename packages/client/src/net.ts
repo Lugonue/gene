@@ -2,6 +2,7 @@
 import type { ClientMsg, Command, ServerMsg } from '@gene/core'
 import { pushLog, pushWarning, store } from './store'
 import { playFrames, playProjectiles, skipAnimation } from './anim'
+import { pickScene } from './scene'
 
 const TOKEN_KEY = 'gene.token'
 
@@ -61,6 +62,9 @@ function handle(msg: ServerMsg): void {
       const apply = (): void => {
         store.view = msg.view
         pushLog(msg.messages, msg.fresh === true)
+        const moment = pickScene(msg.moments)
+        if (msg.fresh) store.scene = null
+        if (moment) store.scene = { moment, seq: (store.scene?.seq ?? 0) + 1 }
         if (msg.fresh) store.screen = 'game'
       }
       if (store.pending !== null && msg.seq === store.pending) store.pending = null

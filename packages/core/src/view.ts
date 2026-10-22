@@ -108,6 +108,8 @@ export interface ItemView {
   status: StudyStatus
   /** Отображение прочности с учётом изученности: «34/40», «~35/~40», «~70%». */
   durabilityText?: string
+  /** Прочность неполная — есть что чинить ремкомплектом. */
+  damaged?: boolean
   /** Ступень эффективности: 4 — 100%, 3 — 85%, 2 — 65%, 1 — 40%, 0 — сломан. */
   effTier?: number
   stats: ItemStatsView
@@ -264,6 +266,7 @@ export function itemView(state: GameState, inst: ItemInstance, owner?: Creature)
   const cur = inst.durability ?? 0
   const max = inst.maxDurability ?? 0
   view.effTier = effTier(inst)
+  if (cur < max) view.damaged = true
   const hidden = '??'
   if (status === 'known') {
     view.durabilityText = `${cur}/${max}`

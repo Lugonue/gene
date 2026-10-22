@@ -1,6 +1,6 @@
 # Лечение без лишних действий
 
-Status: ready-for-agent
+Status: resolved
 
 Из бэклога: `../backlog/issues/01-heal-ux.md`. Окно применения — клавиши `a`/`q` (`client/src/input.ts`), выбор цели — `client/src/components/TargetModal.vue`, действие — `useAction` в `core/src/actions/items.ts`.
 

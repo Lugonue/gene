@@ -1,6 +1,6 @@
 # Окно-сцена: ASCII-анимация ярких моментов
 
-Status: ready-for-agent
+Status: resolved
 
 Из бэклога: `../backlog/issues/02-ascii-cutscene-panel.md`.
 
