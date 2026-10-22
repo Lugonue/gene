@@ -60,6 +60,8 @@ export type ServerMsg =
       projectiles?: ProjectileTrail[]
       /** Яркие моменты хода для окна-сцены (сцену выбирает клиент). */
       moments?: SceneMoment[]
+      /** За ход был удар по игроку в критическом состоянии: клиент даёт яркую вспышку по краю карты. */
+      criticalFlash?: true
     }
   | { type: 'gameOver'; summary: GameSummary }
   | { type: 'error'; message: string; seq?: number }

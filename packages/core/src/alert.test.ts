@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { updateAlert } from './alert'
+import { turnFlashes, updateAlert } from './alert'
 import type { Ctx } from './context'
 import { newTestGame } from './testing'
 import { player } from './state'
@@ -126,5 +126,12 @@ describe('вспышка при ударе', () => {
   it('прочие удары — без вспышки', () => {
     expect(hit(hitPlayer(90, undefined))).not.toHaveProperty('criticalFlash')
     expect(hit(hitPlayer(45, 'danger'))).not.toHaveProperty('criticalFlash')
+  })
+
+  it('вспышка хода определяется по его событиям целиком (флаг сообщения клиенту)', () => {
+    expect(turnFlashes(hitPlayer(26, 'danger'))).toBe(true)
+    expect(turnFlashes(hitPlayer(20, 'critical'))).toBe(true)
+    expect(turnFlashes(hitPlayer(45, 'danger'))).toBe(false)
+    expect(turnFlashes([])).toBe(false)
   })
 })

@@ -2,10 +2,11 @@
 import { computed } from 'vue'
 import { store } from '../store'
 import { EFF_COLORS, WOUND_COLORS } from '../colors'
+import { alertLook } from '../alertFx'
 
 const view = computed(() => store.view)
 const hpPct = computed(() => (view.value ? Math.max(0, (view.value.player.hp / view.value.player.maxHp) * 100) : 0))
-const hpColor = computed(() => (hpPct.value > 60 ? '#5fd068' : hpPct.value > 30 ? '#e8d44d' : '#ef4b4b'))
+const look = computed(() => alertLook(view.value?.player.alert ?? 'none'))
 </script>
 
 <template>
@@ -18,8 +19,9 @@ const hpColor = computed(() => (hpPct.value > 60 ? '#5fd068' : hpPct.value > 30 
     <div class="row"><span class="dim">Ход</span> {{ view.turn }}</div>
     <div class="row hp">
       <span class="dim">Целостность</span> {{ view.player.hp }}/{{ view.player.maxHp }}
-      <div class="bar"><div class="fill" :style="{ width: hpPct + '%', background: hpColor }" /></div>
+      <div class="bar"><div class="fill" :class="look.bar" :style="{ width: hpPct + '%' }" /></div>
     </div>
+    <div v-if="look.banner" class="critical-banner">КРИТИЧЕСКОЕ СОСТОЯНИЕ</div>
 
     <div class="section">[ДИАГНОСТИКА]</div>
     <div v-for="part in view.player.parts" :key="part.id" class="part">
@@ -90,6 +92,42 @@ const hpColor = computed(() => (hpPct.value > 60 ? '#5fd068' : hpPct.value > 30 
 }
 .fill {
   height: 100%;
+}
+.fill.ok {
+  background: #5fd068;
+}
+.fill.danger {
+  background: #e8d44d;
+}
+.fill.critical {
+  background: #ef4b4b;
+  animation: alert-blink 1.2s ease-in-out infinite;
+}
+.critical-banner {
+  margin: 4px 0 2px;
+  padding: 2px 6px;
+  text-align: center;
+  font-weight: bold;
+  letter-spacing: 1px;
+  color: #ffd0d0;
+  background: #5a1010;
+  border: 1px solid #ef4b4b;
+  animation: alert-blink 1.2s ease-in-out infinite;
+}
+@keyframes alert-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fill.critical,
+  .critical-banner {
+    animation: none;
+  }
 }
 .section {
   margin-top: 10px;

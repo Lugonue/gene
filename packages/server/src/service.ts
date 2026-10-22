@@ -5,6 +5,7 @@ import {
   buildView,
   createGame,
   sceneMoments,
+  turnFlashes,
   validateNewGame,
   type ClientMsg,
   type Command,
@@ -199,6 +200,7 @@ export class GameService {
       ...(r.frames ? { frames: r.frames } : {}),
       ...(r.projectiles ? { projectiles: r.projectiles } : {}),
       ...(moments.length > 0 ? { moments } : {}),
+      ...(turnFlashes(r.events) ? { criticalFlash: true as const } : {}),
     })
     if (over) {
       conn.send({ type: 'gameOver', summary: summarize(game.state, game.log) })
