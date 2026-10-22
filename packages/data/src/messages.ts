@@ -342,7 +342,6 @@ export const TEMPLATES: Record<string, string[]> = {
     '{victim.nom} {verb:погибать@victim}.',
     '{victim.nom} {verb:валиться@victim} на пол и больше не {verb:двигаться@victim}.',
   ],
-  'death.player.vital': ['Ты погибаешь. [ЯДРО] Критическое повреждение: {part.nom}. Отключение систем…'],
   'death.player.hp': ['Ты погибаешь. [ЯДРО] Целостность корпуса 0%. Отключение систем…'],
 
   // ---------- Снаряжение ----------
