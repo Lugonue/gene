@@ -307,6 +307,44 @@ describe('сообщения дальнего боя', () => {
 })
 
 
+describe('цифры входящего урона в журнале', () => {
+  const blow = (over: Partial<Extract<GameEvent, { type: 'attackHit' }>>): GameEvent => ({
+    type: 'attackHit',
+    attacker: mon('goblin_brute'),
+    target: PLAYER,
+    attack: natural('fist'),
+    partId: 'head',
+    partMaterial: 'organic',
+    damage: 7,
+    absorbed: 0,
+    severity: 'medium',
+    readout: { integrity: 18, maxIntegrity: 40, partHp: 3, partMaxHp: 12 },
+    ...over,
+  })
+  const hitMsg = (e: GameEvent) => renderEvents([e], 'p')[0]!
+
+  it('удар по игроку: цифры в отдельной пометке, текст без цифр', () => {
+    const m = hitMsg(blow({}))
+    expect(m.note).toBe('−7 · Целостность 18/40 · голова 3/12')
+    expect(m.text).not.toContain('18/40')
+  })
+
+  it('броня что-то поглотила — фрагмент про броню', () => {
+    const m = hitMsg(blow({ absorbed: 3, armourDefId: ARMOURS[0]!.id }))
+    expect(m.note).toBe('−7 · броня −3 · Целостность 18/40 · голова 3/12')
+  })
+
+  it('полное поглощение — «урон заблокирован» без цифр', () => {
+    const m = hitMsg(blow({ damage: 0, absorbed: 5, armourDefId: ARMOURS[0]!.id, severity: 'absorbed' }))
+    expect(m.note).toBe('урон заблокирован')
+  })
+
+  it('удар по монстру — без пометки', () => {
+    const m = hitMsg(blow({ attacker: PLAYER, target: mon('goblin_brute'), readout: undefined }))
+    expect(m.note).toBeUndefined()
+  })
+})
+
 describe('сообщения магических типов урона', () => {
   const MAGIC = MAGIC_DAMAGE_TYPES
   /** Текст магии не зависит от того, каким заклинанием нанесён удар. */

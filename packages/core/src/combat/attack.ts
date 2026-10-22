@@ -160,6 +160,9 @@ export function resolveAttack(
     ...(armour && absorbed > 0 ? { armourDefId: armour.def.id } : {}),
     severity: hitSeverity(damage, part),
     ...(isStrongHit(damage, target.maxHp, fromStage, part.wound) ? { strong: true as const } : {}),
+    ...(isPlayerTarget
+      ? { readout: { integrity: Math.max(0, target.hp), maxIntegrity: target.maxHp, partHp: part.hp, partMaxHp: part.maxHp } }
+      : {}),
   })
   if (stageIndex(part.wound) > stageIndex(fromStage)) {
     ctx.events.push({

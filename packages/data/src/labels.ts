@@ -48,3 +48,6 @@ export const ROLE_LABELS: Record<MonsterRole, string> = {
 }
 
 export const STUDY_LABELS = { unknown: 'не изучен', partial: 'частично изучен', known: 'изучен' } as const
+
+/** Пометка с цифрами входящего урона в журнале (только удары по игроку). */
+export const DAMAGE_READOUT = { armour: 'броня', integrity: 'Целостность', blocked: 'урон заблокирован' } as const

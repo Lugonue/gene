@@ -20,6 +20,14 @@ export type AttackRef =
 
 export type HitSeverity = 'absorbed' | 'light' | 'medium' | 'heavy'
 
+/** Целостность и hp задетой части после удара. */
+export interface HitReadout {
+  integrity: number
+  maxIntegrity: number
+  partHp: number
+  partMaxHp: number
+}
+
 export type RejectReason = RejectReasonKey
 
 export type GameEvent =
@@ -51,6 +59,8 @@ export type GameEvent =
       severity: HitSeverity
       /** Сильный удар (порог — isStrongHit в модуле формул): повод для окна-сцены. */
       strong?: true
+      /** Только удар по игроку: состояние после удара — для цифр в журнале. */
+      readout?: HitReadout
     }
   | {
       type: 'woundChanged'

@@ -253,3 +253,28 @@ describe('монстры и ИИ', () => {
     expect(actionCost(wolf, 'move')).toBeGreaterThan(base)
   })
 })
+
+describe('цифры входящего урона', () => {
+  it('удар по игроку несёт целостность и hp задетой части после удара; удар по монстру — нет', () => {
+    const s = newTestGame(5)
+    const p = player(s)
+    p.hp = p.maxHp = 100_000
+    for (const part of p.parts) part.hp = part.maxHp = 100_000
+    const g = freshMonster(s, 'goblin_brute')
+    g.hp = g.maxHp = 100_000
+    for (const part of g.parts) part.hp = part.maxHp = 100_000
+
+    const ctx: Ctx = { state: s, events: [] }
+    for (let i = 0; i < 100 && !ctx.events.some((e) => e.type === 'attackHit'); i++) resolveAttack(ctx, g, p)
+    const hit = ctx.events.find((e) => e.type === 'attackHit')
+    if (hit?.type !== 'attackHit') throw new Error('нет попадания')
+    const part = findPart(p, hit.partId)!
+    expect(hit.readout).toEqual({ integrity: p.hp, maxIntegrity: 100_000, partHp: part.hp, partMaxHp: 100_000 })
+
+    ctx.events = []
+    for (let i = 0; i < 100 && !ctx.events.some((e) => e.type === 'attackHit'); i++) resolveAttack(ctx, p, g)
+    const back = ctx.events.find((e) => e.type === 'attackHit')
+    if (back?.type !== 'attackHit') throw new Error('нет попадания')
+    expect(back.readout).toBeUndefined()
+  })
+})
