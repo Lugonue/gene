@@ -440,6 +440,8 @@ export const REJECT_TEXT: Record<RejectReasonKey, string> = {
   bandageOnBionic: '[ДИАГНОСТИКА] Бинт бесполезен для бионики — нужен ремкомплект.',
   repairOnOrganic: '[ДИАГНОСТИКА] Ремкомплект не подходит для органики — нужен бинт.',
   notDamaged: 'Чинить или лечить нечего.',
+  fullHealth: 'Я полностью здоров.',
+  nothingToRepair: 'Чинить нечего.',
   notUsable: 'Это нельзя применить.',
   equippedItem: 'Сначала сними предмет.',
   nothingToExplore: 'Здесь больше нечего исследовать.',

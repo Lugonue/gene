@@ -2,7 +2,8 @@
 import { ITEMS } from '@gene/data'
 import type { ItemView } from '@gene/core'
 import { sendCommand } from './net'
-import { store } from './store'
+import { pushWarning, store } from './store'
+import { NO_TARGETS_TEXT, useTargets } from './targets'
 
 /** Эффект применяемого расходника; у боеприпасов его нет — они тратятся при выстреле. */
 export function consumableEffect(item: ItemView): string | undefined {
@@ -19,8 +20,15 @@ export function useItem(item: ItemView): void {
     sendCommand({ type: 'use', itemId: item.id })
     return
   }
+  const mode = effect === 'bandage' ? 'bandage' : 'repair'
+  // Применить не к чему — окно не открывается, ход не тратится.
+  if (store.view && useTargets(store.view, item.id, mode).length === 0) {
+    store.modal = null
+    pushWarning(NO_TARGETS_TEXT[mode])
+    return
+  }
   store.usingItemId = item.id
-  store.modal = effect === 'bandage' ? 'bandageTarget' : 'repairTarget'
+  store.modal = mode === 'bandage' ? 'bandageTarget' : 'repairTarget'
 }
 
 export function toggleEquip(item: ItemView): void {
