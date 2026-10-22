@@ -98,6 +98,12 @@ function isDamagedPart(part: BodyPartState): boolean {
   return part.hp < part.maxHp || part.wound !== 'none' || !!part.needsTreatment
 }
 
+/** Зелью нечего лечить: общий HP полон и все органические части целы. */
+function isFullyHealthy(p: Creature): boolean {
+  if (p.hp < p.maxHp) return false
+  return !p.parts.some((part) => part.material === 'organic' && part.wound !== 'severed' && isDamagedPart(part))
+}
+
 export function useAction(ctx: Ctx, itemId: string, targetPartId?: string, targetItemId?: string): ActionResult {
   const p = player(ctx.state)
   const inst = ownItem(p, ctx, itemId)
@@ -122,6 +128,7 @@ export function useAction(ctx: Ctx, itemId: string, targetPartId?: string, targe
       break
     }
     case 'healPotion': {
+      if (isFullyHealthy(p)) return reject('fullHealth')
       const before = p.hp
       healCreature(p, potionHeal(p))
       ctx.events.push({ type: 'potionDrunk', healed: p.hp - before })

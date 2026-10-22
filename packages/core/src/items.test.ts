@@ -148,6 +148,24 @@ describe('материалы тела, лечение и ремонт', () => {
     expect(findPart(player(s), 'right_arm')!.hp).toBe(arm)
     expect(player(s).inventory.some((id) => s.items[id]?.defId === 'heal_potion')).toBe(false)
   })
+
+  it('зелье при полном здоровье не выпивается: отказ, предмет цел, время не идёт', () => {
+    const s = newTestGame(34)
+    clearMonsters(s)
+    const potion = inv(s, 'heal_potion')
+    const r = applyCommand(s, { type: 'use', itemId: potion.id })
+    expect(r.events).toEqual([{ type: 'commandRejected', reason: 'fullHealth' }])
+    expect(r.state.turn).toBe(s.turn)
+    expect(inv(r.state, 'heal_potion').count ?? 1).toBe(potion.count ?? 1)
+  })
+
+  it('зелье выпивается, если ранена часть тела при полном общем HP', () => {
+    let s = newTestGame(34)
+    clearMonsters(s)
+    damage(findPart(player(s), 'torso')!, 0.4)
+    s = applyCommand(s, { type: 'use', itemId: inv(s, 'heal_potion').id }).state
+    expect(player(s).inventory.some((id) => s.items[id]?.defId === 'heal_potion')).toBe(false)
+  })
 })
 
 describe('инвентарь и снаряжение', () => {
