@@ -6,6 +6,7 @@ import {
   FACTIONS,
   ITEMS,
   MONSTERS,
+  ORGANIC_DESTROYED_LABEL,
   PHENOMENA,
   ROLE_LABELS,
   SKILLS,
@@ -217,7 +218,8 @@ export interface PlayerView {
 }
 
 export function woundLabel(part: BodyPartState): string {
-  if (part.material === 'bionic' && part.hp <= 0 && part.wound !== 'severed') return BIONIC_FAILURE_LABEL
+  if (part.hp <= 0 && part.wound !== 'severed')
+    return part.material === 'bionic' ? BIONIC_FAILURE_LABEL : ORGANIC_DESTROYED_LABEL
   return WOUND_LABELS[part.material][part.wound]
 }
 

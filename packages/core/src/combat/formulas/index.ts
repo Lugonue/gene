@@ -258,9 +258,23 @@ export function isStrongHit(damage: number, targetMaxHp: number, from: WoundStag
   return damage >= targetMaxHp * STRONG_HIT_FRACTION
 }
 
-/** Как урон распределяется между частью тела и общим пулом HP. */
-export function splitDamage(damage: number): { part: number; total: number } {
-  return { part: damage, total: damage }
+/** Множитель урона по целостности от состояния торса: искалеченный — ×1.5, на 0 hp — ×2. */
+const TORSO_CRIPPLED_INTEGRITY_MUL = 1.5
+const TORSO_DESTROYED_INTEGRITY_MUL = 2
+
+export function torsoIntegrityMul(torso: BodyPartState | undefined): number {
+  if (!torso) return 1
+  if (torso.hp <= 0) return TORSO_DESTROYED_INTEGRITY_MUL
+  if (stageIndex(torso.wound) >= stageIndex('crippled')) return TORSO_CRIPPLED_INTEGRITY_MUL
+  return 1
+}
+
+/**
+ * Как урон распределяется между частью тела и общим пулом HP (целостностью).
+ * torso — торс цели до удара: его стадия усиливает урон по целостности (для всех существ).
+ */
+export function splitDamage(damage: number, torso?: BodyPartState): { part: number; total: number } {
+  return { part: damage, total: Math.round(damage * torsoIntegrityMul(torso)) }
 }
 
 // ---------------------------------------------------------------------------
