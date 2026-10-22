@@ -5,7 +5,7 @@ import { store } from '../store'
 
 <template>
   <div v-for="m in store.log" :key="m.id" class="msg" :class="[m.kind, { fresh: m.fresh }]">
-    {{ m.text }}<span v-if="m.count > 1" class="count">&nbsp;×{{ m.count }}</span>
+    {{ m.text }}<span v-if="m.count > 1" class="count">&nbsp;×{{ m.count }}</span><span v-if="m.note" class="note">&nbsp;{{ m.note }}</span>
   </div>
 </template>
 
@@ -18,6 +18,13 @@ import { store } from '../store'
 }
 .count {
   opacity: 0.7;
+}
+/* Цифры входящего урона: мелко, моноширинно, приглушённо. */
+.note {
+  font-size: 0.8em;
+  font-family: Consolas, 'DejaVu Sans Mono', monospace;
+  opacity: 0.6;
+  white-space: nowrap;
 }
 .msg.system {
   color: #2f8f9e;
