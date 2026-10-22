@@ -23,6 +23,7 @@ export type ModalName =
   | 'disassemble'
   | 'bandageTarget'
   | 'repairTarget'
+  | 'log'
 
 export const store = reactive({
   connected: false,
@@ -50,8 +51,8 @@ export const store = reactive({
   projectile: null as { x: number; y: number; glyph: string; color: string } | null,
   /** Окно-сцена включено (клавиша c, помнится в localStorage). */
   sceneEnabled: true,
-  /** Текущая сцена (moment null — заставка); seq растёт с каждой сменой, чтобы перезапускать анимацию. */
-  scene: { moment: null, seq: 0 } as SceneState,
+  /** Очередь сцен окна-сцены; seq растёт с каждым изменением после хода, epoch — при переподключении. */
+  scene: { queue: [], seq: 0, epoch: 0 } as SceneState,
 })
 
 export interface AnimFrame {
@@ -63,7 +64,7 @@ export interface AnimFrame {
 }
 
 let nextLogId = 1
-export const LOG_LIMIT = 100
+export const LOG_LIMIT = 500
 
 export function pushLog(messages: LogMessage[], replace = false): void {
   for (const e of store.log) e.fresh = false

@@ -1,6 +1,8 @@
 <script setup lang="ts">
+// Панель журнала: без прокрутки, всегда видны последние записи; весь журнал — кнопкой или клавишей p.
 import { nextTick, ref, watch } from 'vue'
 import { store } from '../store'
+import MessageList from './MessageList.vue'
 
 const box = ref<HTMLElement | null>(null)
 watch(
@@ -16,43 +18,41 @@ watch(
 </script>
 
 <template>
-  <div ref="box" class="log">
-    <div v-for="m in store.log" :key="m.id" class="msg" :class="[m.kind, { fresh: m.fresh }]">
-      {{ m.text }}<span v-if="m.count > 1" class="count">&nbsp;×{{ m.count }}</span>
-    </div>
+  <div class="log">
+    <div ref="box" class="lines"><MessageList /></div>
+    <button class="expand" tabindex="-1" title="Весь журнал (p)" @mousedown.prevent @click="store.modal = 'log'">⤢ p</button>
   </div>
 </template>
 
 <style scoped>
 .log {
+  position: relative;
   height: 150px;
-  overflow-y: auto;
-  padding: 4px 8px;
   border-top: 1px solid #1f3a44;
-  font-size: 14px;
-  line-height: 1.35;
   background: #050708;
 }
-.msg {
-  color: #8d949a;
+.lines {
+  height: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+  padding: 4px 8px;
+  font-size: 14px;
+  line-height: 1.35;
 }
-.msg.fresh {
-  color: #f2f2f2;
-}
-.count {
-  opacity: 0.7;
-}
-.msg.system {
+.expand {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  padding: 0 6px;
+  background: #061015;
+  border: 1px solid #1f3a44;
   color: #2f8f9e;
   font-family: Consolas, 'DejaVu Sans Mono', monospace;
+  font-size: 12px;
+  cursor: pointer;
 }
-.msg.system.fresh {
+.expand:hover {
   color: #5ff0ff;
-}
-.msg.warning {
-  color: #9a6a3a;
-}
-.msg.warning.fresh {
-  color: #ffb057;
+  border-color: #2fb7c9;
 }
 </style>

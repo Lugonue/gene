@@ -2,7 +2,7 @@
 import type { DamageType, Material, PhenomenonId, RejectReasonKey, SpellId, SkillId, SlotId, WoundStage } from '@gene/data'
 import type { StudyStatus } from './state'
 import type { FeatureKind } from './world/notice'
-import type { FatigueStage } from './combat/formulas'
+import type { FatigueStage, ThreatTier } from './combat/formulas'
 
 /** Ссылка на существо в событии: id и вид ('player' или id монстра). */
 export interface ActorRef {
@@ -30,7 +30,7 @@ export type GameEvent =
   | { type: 'blocked' }
   | { type: 'monsterNoticed'; creature: ActorRef }
   /** Вид впервые попал в бестиарий (kind — id монстра). */
-  | { type: 'speciesDiscovered'; kind: string }
+  | { type: 'speciesDiscovered'; kind: string; threat: ThreatTier }
   | {
       type: 'attackMissed'
       attacker: ActorRef

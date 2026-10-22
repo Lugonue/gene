@@ -13,6 +13,7 @@ import { noticeObjects } from './world/notice'
 import type { MoveFrame, ProjectileTrail } from './protocol'
 import { fovRadius, organicHealCap } from './combat/formulas'
 import { applyRegen } from './health'
+import { threatToPlayer } from './threat'
 import { actorRef } from './combat/attack'
 import {
   disassembleAction,
@@ -146,7 +147,12 @@ function observe(ctx: Ctx): void {
     if (seen && !c.ai.noticed) ctx.events.push({ type: 'monsterNoticed', creature: actorRef(c) })
     c.ai.noticed = seen
   }
-  for (const kind of noticed.species) ctx.events.push({ type: 'speciesDiscovered', kind })
+  for (const kind of noticed.species) {
+    const c = Object.values(state.creatures).find(
+      (o) => o.kind === kind && o.depth === p.depth && visible.has(cellIndex(level, o)),
+    )!
+    ctx.events.push({ type: 'speciesDiscovered', kind, threat: threatToPlayer(state, c, p) })
+  }
   for (const feature of noticed.features) ctx.events.push({ type: 'featureNoticed', feature })
   if (noticed.itemDefIds.length > 0) ctx.events.push({ type: 'itemsNoticed', itemDefIds: noticed.itemDefIds })
 }

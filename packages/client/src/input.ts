@@ -59,7 +59,7 @@ export type KeyAction =
   | { kind: 'command'; cmd: Command }
   | { kind: 'dir'; dir: Dir }
   | { kind: 'run'; dir: Dir }
-  | { kind: 'open'; what: 'inventory' | 'equipment' | 'skills' | 'help' | 'use' | 'drop' | 'disassemble' }
+  | { kind: 'open'; what: 'inventory' | 'equipment' | 'skills' | 'help' | 'use' | 'drop' | 'disassemble' | 'log' }
   | { kind: 'look' }
   | { kind: 'fire' }
   | { kind: 'toggleScene' }
@@ -99,6 +99,8 @@ export function keyAction(ev: KeyboardEvent): KeyAction | undefined {
       return { kind: 'open', what: 'equipment' }
     case 'm':
       return { kind: 'open', what: 'skills' }
+    case 'p':
+      return { kind: 'open', what: 'log' }
     case '?':
       return { kind: 'open', what: 'help' }
     case 'a':

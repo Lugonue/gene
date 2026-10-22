@@ -505,7 +505,8 @@ export interface ThreatInput {
   dodging: number
   /** Сумма поглощения надетой брони. */
   absorb: number
-  trait: FactionTrait
+  /** Черта фракции; у игрока её нет. */
+  trait?: FactionTrait
   /** Заклинания вида: база урона снаряда или лечения и перезарядка; spellPower — сила вида. */
   spells: { amount: number; cooldown: number }[]
   spellPower?: number
@@ -529,7 +530,18 @@ export function monsterThreat(t: ThreatInput): number {
   const spells = t.spells.reduce((s, sp) => s + spellThreat(sp.amount, sp.cooldown, t.spellPower), 0)
   const offence = t.damage * (1 + 0.04 * t.attackSkill + 0.02 * t.fighting) + t.accuracy / 4 + spells
   const defence = t.maxHp / 4 + t.absorb + (t.evasion + 1.5 * t.dodging) / 3
-  return Math.max(1, Math.round((offence + defence) * (t.speed / 10) * TRAIT_THREAT[t.trait]))
+  return Math.max(1, Math.round((offence + defence) * (t.speed / 10) * (t.trait ? TRAIT_THREAT[t.trait] : 1)))
+}
+
+/** Уровень угрозы монстра относительно игрока: 1 — заметно слабее, 3 — равный, 5 — смертельный. */
+export type ThreatTier = 1 | 2 | 3 | 4 | 5
+
+/** Границы отношения угрозы монстра к угрозе игрока между уровнями 1→2, 2→3, 3→4, 4→5. */
+const THREAT_TIER_RATIOS = [0.5, 0.8, 1.25, 2]
+
+export function threatTier(threat: number, playerThreat: number): ThreatTier {
+  const ratio = threat / Math.max(1, playerThreat)
+  return (1 + THREAT_TIER_RATIOS.filter((r) => ratio >= r).length) as ThreatTier
 }
 
 // ---------------------------------------------------------------------------

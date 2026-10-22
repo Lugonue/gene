@@ -9,6 +9,7 @@ import HudPanel from './components/HudPanel.vue'
 import ScenePanel from './components/ScenePanel.vue'
 import { loadSceneEnabled, saveSceneEnabled } from './scene'
 import MessageLog from './components/MessageLog.vue'
+import LogModal from './components/LogModal.vue'
 import CreateCharacter from './components/CreateCharacter.vue'
 import GameOver from './components/GameOver.vue'
 import InventoryModal from './components/InventoryModal.vue'
@@ -144,6 +145,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
       <TargetModal v-else-if="store.modal === 'repairTarget'" mode="repair" />
       <SkillsModal v-else-if="store.modal === 'skills'" />
       <HelpModal v-else-if="store.modal === 'help'" />
+      <LogModal v-else-if="store.modal === 'log'" />
     </div>
   </div>
 </template>

@@ -6,6 +6,8 @@ import { player, type Creature, type GameState } from './state'
 import type { Ctx } from './context'
 import type { GameEvent } from './events'
 import { sceneMoments } from './scene'
+import { threatTier } from './combat/formulas'
+import { threatToPlayer } from './threat'
 
 type Hit = Extract<GameEvent, { type: 'attackHit' }>
 
@@ -62,7 +64,7 @@ describe('первая встреча с видом', () => {
     spawnMonster(s, 'goblin_brute', 1, 23, 20)
     const first = run(s, [{ type: 'wait' }])
     expect(first.events.filter((e) => e.type === 'speciesDiscovered')).toEqual([
-      { type: 'speciesDiscovered', kind: 'goblin_brute' },
+      { type: 'speciesDiscovered', kind: 'goblin_brute', threat: 1 },
     ])
     spawnMonster(first.state, 'goblin_brute', 1, 17, 20)
     const second = run(first.state, [{ type: 'wait' }])
@@ -88,7 +90,8 @@ describe('моменты для сцены', () => {
       ...(strong ? { strong: true } : {}),
     })
     const events: GameEvent[] = [
-      { type: 'speciesDiscovered', kind: 'hyena' },
+      { type: 'speciesDiscovered', kind: 'hyena', threat: 2 },
+      { type: 'speciesDiscovered', kind: 'goblin_brute', threat: 4 },
       hit(me, gob, false),
       hit(me, gob, true),
       hit(gob, me, true),
@@ -96,10 +99,49 @@ describe('моменты для сцены', () => {
       { type: 'creatureDied', creature: { id: 'm2', kind: 'hyena' }, cause: 'hp' },
     ]
     expect(sceneMoments(events, 'p')).toEqual([
-      { kind: 'encounter', species: 'hyena' },
+      {
+        kind: 'encounter',
+        seen: [
+          { species: 'hyena', threat: 2 },
+          { species: 'goblin_brute', threat: 4 },
+        ],
+      },
       { kind: 'strongHit', species: 'goblin_brute', byPlayer: true },
       { kind: 'strongHit', species: 'goblin_brute', byPlayer: false },
       { kind: 'death', species: 'goblin_brute' },
+    ])
+  })
+})
+
+describe('угроза нового вида относительно игрока', () => {
+  it('уровень растёт с отношением угрозы монстра к угрозе игрока', () => {
+    expect(threatTier(10, 100)).toBe(1)
+    expect(threatTier(100, 100)).toBe(3)
+    expect(threatTier(500, 100)).toBe(5)
+    expect(threatTier(100, 0)).toBe(5)
+  })
+
+  it('тот же монстр опаснее для слабого игрока, чем для сильного', () => {
+    const s = arenaGame(1)
+    const p = player(s)
+    const g = spawnMonster(s, 'goblin_brute', 1, 23, 20)
+    p.maxHp = 1_000_000
+    const strong = threatToPlayer(s, g, p)
+    p.maxHp = 10
+    const weak = threatToPlayer(s, g, p)
+    expect(weak).toBeGreaterThan(strong)
+  })
+
+  it('несколько видов, замеченных за ход, — одна встреча', () => {
+    const s = arenaGame(1)
+    spawnMonster(s, 'goblin_brute', 1, 23, 20)
+    spawnMonster(s, 'hyena', 1, 17, 20)
+    const r = run(s, [{ type: 'wait' }])
+    const moments = sceneMoments(r.events, s.playerId).filter((m) => m.kind === 'encounter')
+    expect(moments).toHaveLength(1)
+    expect(moments[0]!.kind === 'encounter' && moments[0]!.seen.map((x) => x.species).sort()).toEqual([
+      'goblin_brute',
+      'hyena',
     ])
   })
 })
