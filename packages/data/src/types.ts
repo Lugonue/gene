@@ -99,8 +99,8 @@ export interface MonsterDef {
   role: MonsterRole
   /** Вес при расстановке среди видов фракции (вожак ставится отдельно). */
   spawnWeight: number
-  /** Заклинания вида (id из SPELLS). */
-  spells?: string[]
+  /** Заклинания вида. */
+  spells?: SpellId[]
   /** Сила заклинаний вида: множитель урона и лечения (по умолчанию 1). */
   spellPower?: number
 }
@@ -110,8 +110,10 @@ export interface MonsterDef {
 /** Явление — эффект, как его видит Ядро: огненный шар гоблина и плевок драконорождённого — одно явление. */
 export type PhenomenonId = 'fireball' | 'frost_bolt' | 'lightning' | 'heal'
 
+export type SpellId = 'fireball' | 'fire_spit' | 'frost_bolt' | 'lightning' | 'heal'
+
 interface SpellDefBase {
-  id: string
+  id: SpellId
   name: WordForms
   phenomenon: PhenomenonId
   /** Дальность (клетки, по Чебышёву). */
@@ -121,8 +123,8 @@ interface SpellDefBase {
 }
 
 /** Снаряд: летит и попадает как стрела. */
-export interface BoltSpellDef extends SpellDefBase {
-  effect: 'bolt'
+export interface ProjectileSpellDef extends SpellDefBase {
+  effect: 'projectile'
   damageType: MagicDamageType
   damage: number
   accuracy: number
@@ -137,7 +139,7 @@ export interface HealSpellDef extends SpellDefBase {
   heal: number
 }
 
-export type SpellDef = BoltSpellDef | HealSpellDef
+export type SpellDef = ProjectileSpellDef | HealSpellDef
 
 // ---------- Фракции ----------
 
@@ -167,14 +169,6 @@ export interface FactionDef {
 export interface RoleGearDef {
   /** Навыки оружия, подходящего роли; пусто — роль без оружия (звери). */
   weaponSkills: SkillId[]
-  /** Шанс надеть броню на каждый вид брони (голова, тело, руки, ноги), если она есть в наборе фракции. */
-  armourChance: number
-}
-
-/** Запас стрелка: боеприпасы к метателю или число метательных копий (вместе с тем, что в руке). */
-export interface RangedSupplyDef {
-  ammo: [number, number]
-  thrown: [number, number]
 }
 
 // ---------- Предметы ----------

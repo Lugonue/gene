@@ -1,8 +1,8 @@
 import { reject, type ActionResult, type Ctx } from '../context'
-import { player } from '../state'
+import { distance, player } from '../state'
 import { actionCost } from '../time'
-import { distance, fire, readyToShoot } from '../combat/ranged'
-import { playerVisibleCells } from '../view'
+import { fire, readyToShoot } from '../combat/ranged'
+import { playerSeesAny } from '../view'
 
 /** Выстрел или бросок игрока в видимую клетку (x, y) в пределах дальности. */
 export function fireAction(ctx: Ctx, x: unknown, y: unknown): ActionResult {
@@ -16,7 +16,7 @@ export function fireAction(ctx: Ctx, x: unknown, y: unknown): ActionResult {
   const ready = readyToShoot(state, p)
   if (typeof ready === 'string') return reject(ready)
   if (distance(p, target) > ready.range) return reject('outOfRange')
-  if (!playerVisibleCells(state).has(target.y * level.width + target.x)) return reject('wrongTarget')
+  if (!playerSeesAny(state, p.depth, [target])) return reject('wrongTarget')
   fire(ctx, p, target, ready)
   return { ok: true, cost: actionCost(p, 'attack') }
 }

@@ -41,21 +41,34 @@ describe('черты поведения фракций', () => {
     expect(fled(waitTurns(s, 40).events)).toBe(false)
   })
 
-  it('Орден идёт по следу игрока, пропавшего из виду, а орк теряет след', () => {
+  it('Орден не узнаёт позицию игрока вне поля зрения: идёт туда, где видел, а не к игроку', () => {
     // Монстр видит игрока, затем игрок оказывается далеко за пределами обзора.
-    const chase = (kind: string): number => {
-      let s = arena()
-      const c = spawnMonster(s, kind, 1, 24, 20)
+    let s = arena()
+    const c = spawnMonster(s, 'templar', 1, 24, 20)
+    s = waitTurns(s, 1).state
+    const p = player(s)
+    p.x = 70
+    p.y = 20
+    s = waitTurns(s, 20).state
+    const m = s.creatures[c.id]!
+    expect(Math.max(Math.abs(m.x - p.x), Math.abs(m.y - p.y))).toBeGreaterThan(40)
+  })
+
+  it('Орден, потеряв игрока, осматривается у места, где видел его, и находит спрятавшегося рядом', () => {
+    let s = arena()
+    const c = spawnMonster(s, 'templar', 1, 27, 20)
+    s = waitTurns(s, 1).state
+    // Игрок уходит за пределы обзора и монстра, и места, где его видели.
+    const p = player(s)
+    p.x = 20
+    p.y = 32
+    let found = false
+    for (let i = 0; i < 40 && !found; i++) {
       s = waitTurns(s, 1).state
-      const p = player(s)
-      p.x = 70
-      p.y = 20
-      s = waitTurns(s, 12).state
       const m = s.creatures[c.id]!
-      return Math.max(Math.abs(m.x - p.x), Math.abs(m.y - p.y))
+      found = Math.max(Math.abs(m.x - 20), Math.abs(m.y - 32)) <= 1
     }
-    expect(chase('templar')).toBeLessThan(40)
-    expect(chase('orc_warrior')).toBeGreaterThan(40)
+    expect(found).toBe(true)
   })
 
   it('кобольды отступают к союзнику, а не просто прочь от игрока', () => {
@@ -66,6 +79,33 @@ describe('черты поведения фракций', () => {
     const r = waitTurns(s, 30)
     s = r.state
     expect(fled(r.events)).toBe(true)
+    const k = s.creatures[kobold.id]!
+    const a = s.creatures[ally.id]!
+    expect(Math.max(Math.abs(k.x - a.x), Math.abs(k.y - a.y))).toBeLessThanOrEqual(2)
+  })
+
+  it('кобольд бежит к живому вожаку, даже если другой союзник ближе', () => {
+    let s = arena()
+    const kobold = wounded(s, 'scaled_guard', 0.05, 21, 20)
+    spawnMonster(s, 'javelineer', 1, 21, 30)
+    const leader = spawnMonster(s, 'dragonborn', 1, 45, 20)
+    const r = waitTurns(s, 40)
+    s = r.state
+    expect(fled(r.events)).toBe(true)
+    const k = s.creatures[kobold.id]!
+    const l = s.creatures[leader.id]!
+    expect(Math.max(Math.abs(k.x - l.x), Math.abs(k.y - l.y))).toBeLessThanOrEqual(2)
+  })
+
+  it('без вожака кобольд бежит к ближайшему союзнику, который сам не убегает', () => {
+    let s = arena()
+    const kobold = wounded(s, 'scaled_guard', 0.05, 21, 20)
+    // Ближний союзник сам бежит — к нему кобольд не идёт.
+    const runner = wounded(s, 'scaled_guard', 0.05, 21, 30)
+    runner.ai = { mode: 'flee' }
+    const ally = spawnMonster(s, 'javelineer', 1, 45, 20)
+    const r = waitTurns(s, 40)
+    s = r.state
     const k = s.creatures[kobold.id]!
     const a = s.creatures[ally.id]!
     expect(Math.max(Math.abs(k.x - a.x), Math.abs(k.y - a.y))).toBeLessThanOrEqual(2)

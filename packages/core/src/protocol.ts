@@ -1,4 +1,5 @@
 // Протокол клиент ↔ сервер (WebSocket, JSON).
+import type { SpellId } from '@gene/data'
 import type { Command } from './state'
 import type { PlayerView } from './view'
 
@@ -6,7 +7,7 @@ export type LogKind = 'narrative' | 'system' | 'warning'
 
 export interface LogMessage {
   text: string
-  /** narrative — события мира; system — сообщения ядра/диагностики (HUD); warning — отказы, ошибки. */
+  /** narrative — события мира; system — сообщения Ядра/диагностики (HUD); warning — отказы, ошибки. */
   kind: LogKind
   turn: number
 }
@@ -22,12 +23,11 @@ export interface MoveFrame {
   tiles: string
 }
 
-/** Полёт снаряда, видимый игроку: клетки пути (индексы y*width+x) и что летит — предмет или заклинание. */
-export interface ProjectileTrail {
-  cells: number[]
-  itemDefId?: string
-  spellId?: string
-}
+/** Что летит: предмет (боеприпас или метательное оружие) или заклинание-снаряд. */
+export type ProjectileKind = { kind: 'item'; itemDefId: string } | { kind: 'spell'; spellId: SpellId }
+
+/** Полёт снаряда, видимый игроку: клетки пути (индексы y*width+x) и что летит. */
+export type ProjectileTrail = ProjectileKind & { cells: number[] }
 
 export interface GameSummary {
   status: 'dead' | 'won'

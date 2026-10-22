@@ -33,6 +33,8 @@ import {
 } from './combat/formulas'
 import { computeFov } from './world/fov'
 import {
+  cellIndex,
+  speciesOf,
   player,
   type BodyPartState,
   type Creature,
@@ -40,6 +42,7 @@ import {
   type GameStatus,
   type ItemInstance,
   type PhenomenonRecord,
+  type Pos,
   type StudyStatus,
 } from './state'
 
@@ -329,7 +332,7 @@ export function buildView(state: GameState): PlayerView {
   for (const c of Object.values(state.creatures)) {
     if (c.kind === 'player' || c.depth !== p.depth) continue
     if (!visible.has(c.y * level.width + c.x)) continue
-    const def = MONSTERS[c.kind]
+    const def = speciesOf(c)
     if (!def) continue
     monsters.push({
       id: c.id,
@@ -470,4 +473,12 @@ export function playerVisibleCells(state: GameState): Set<number> {
   const p = player(state)
   const level = state.levels[p.depth]!
   return computeFov(level, p.x, p.y, fovRadius(p))
+}
+
+/** Видит ли игрок хоть одну из клеток cells уровня depth. */
+export function playerSeesAny(state: GameState, depth: number, cells: Pos[]): boolean {
+  if (player(state).depth !== depth) return false
+  const level = state.levels[depth]!
+  const visible = playerVisibleCells(state)
+  return cells.some((q) => visible.has(cellIndex(level, q)))
 }

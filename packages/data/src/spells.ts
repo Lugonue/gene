@@ -1,8 +1,8 @@
-import type { SpellDef } from './types'
+import type { SpellDef, SpellId } from './types'
 import { w } from './words'
 
 // Заклинания монстров (спека factions, «Магия монстров»). Перезарядка — в aut (обычный ход — 10).
-export const SPELLS: Record<string, SpellDef> = {
+export const SPELLS: Record<SpellId, SpellDef> = {
   fireball: {
     id: 'fireball',
     name: w(
@@ -10,7 +10,7 @@ export const SPELLS: Record<string, SpellDef> = {
       'm',
     ),
     phenomenon: 'fireball',
-    effect: 'bolt',
+    effect: 'projectile',
     damageType: 'fire',
     damage: 8,
     accuracy: 6,
@@ -33,7 +33,7 @@ export const SPELLS: Record<string, SpellDef> = {
       'm',
     ),
     phenomenon: 'fireball',
-    effect: 'bolt',
+    effect: 'projectile',
     damageType: 'fire',
     damage: 10,
     accuracy: 5,
@@ -56,7 +56,7 @@ export const SPELLS: Record<string, SpellDef> = {
       'f',
     ),
     phenomenon: 'frost_bolt',
-    effect: 'bolt',
+    effect: 'projectile',
     damageType: 'cold',
     damage: 6,
     accuracy: 8,
@@ -68,7 +68,7 @@ export const SPELLS: Record<string, SpellDef> = {
     id: 'lightning',
     name: w(['молния', 'молнии', 'молнии', 'молнию', 'молнией', 'молнии'], 'f'),
     phenomenon: 'lightning',
-    effect: 'bolt',
+    effect: 'projectile',
     damageType: 'lightning',
     damage: 8,
     accuracy: 10,

@@ -1,10 +1,10 @@
 // Заклинания монстров: перезарядка, усталость, срыв; снаряд летит механизмом дальнего боя. Числа — в ./formulas.
-import { MONSTERS, SPELLS, type BoltSpellDef, type SpellDef } from '@gene/data'
+import { SPELLS, type ProjectileSpellDef, type SpellDef } from '@gene/data'
 import type { Ctx } from '../context'
-import { player, type Creature, type GameState } from '../state'
+import { speciesOf, type Creature, type GameState } from '../state'
 import { chance } from '../rng'
 import { healCreature } from '../health'
-import { playerVisibleCells } from '../view'
+import { playerSeesAny } from '../view'
 import { studyPhenomenon } from '../knowledge'
 import {
   FATIGUE_PER_CAST,
@@ -17,15 +17,15 @@ import {
   spellHeal,
 } from './formulas'
 import { actorRef, resolveAttack, type ChosenAttack } from './attack'
-import { firstCreatureOnPath, projectilePath, recordTrail } from './ranged'
+import { recordTrail, traceProjectile } from './ranged'
 
 /** Заклинания вида существа. */
 export function spellsOf(c: Creature): SpellDef[] {
-  return (MONSTERS[c.kind]?.spells ?? []).flatMap((id) => SPELLS[id] ?? [])
+  return (speciesOf(c)?.spells ?? []).map((id) => SPELLS[id])
 }
 
 function spellPower(c: Creature): number | undefined {
-  return MONSTERS[c.kind]?.spellPower
+  return speciesOf(c)?.spellPower
 }
 
 /** Усталость заклинателя сейчас (спадает со временем). */
@@ -50,9 +50,10 @@ export function castSpell(ctx: Ctx, caster: Creature, spell: SpellDef, target: C
   magic.fatigue = fatigue + FATIGUE_PER_CAST
   magic.fatigueAt = state.now
 
-  const casterSeen = playerSees(state, caster)
+  // Колдовство на игрока видно всегда, остальное — только если игрок видит заклинателя.
+  const casterSeen = playerSeesAny(state, caster.depth, [caster])
   const seen = target.kind === 'player' || casterSeen
-  // Данные явления для ядра: колдовство в поле зрения (или его срыв) и попадание по киборгу.
+  // Данные явления для Ядра: колдовство в поле зрения (или его срыв) и попадание по киборгу.
   let data = 0
   if (chance(state.rng, fizzleChance(fatigue))) {
     if (seen) ctx.events.push({ type: 'spellFizzled', caster: actorRef(caster), spellId: spell.id })
@@ -60,8 +61,8 @@ export function castSpell(ctx: Ctx, caster: Creature, spell: SpellDef, target: C
   } else {
     if (seen) ctx.events.push({ type: 'spellCast', caster: actorRef(caster), spellId: spell.id, target: actorRef(target) })
     if (casterSeen) data = PHENOMENON_GAIN.observe
-    if (spell.effect === 'bolt') {
-      if (bolt(ctx, caster, spell, target)?.kind === 'player') data += PHENOMENON_GAIN.hit
+    if (spell.effect === 'projectile') {
+      if (launchProjectile(ctx, caster, spell, target)?.kind === 'player') data += PHENOMENON_GAIN.hit
     } else healCreature(target, spellHeal(spell.heal, spellPower(caster), target))
   }
   if (data > 0 && state.status === 'active') studyPhenomenon(ctx, spell.phenomenon, data)
@@ -71,25 +72,17 @@ export function castSpell(ctx: Ctx, caster: Creature, spell: SpellDef, target: C
     ctx.events.push({ type: 'casterTired', caster: actorRef(caster), stage })
 }
 
-/** Колдовство на игрока видно всегда, остальное — только если игрок видит заклинателя. */
-function playerSees(state: GameState, c: Creature): boolean {
-  const p = player(state)
-  return p.depth === c.depth && playerVisibleCells(state).has(c.y * state.levels[c.depth]!.width + c.x)
-}
-
 /** Снаряд заклинания; возвращает существо, по которому он попал. */
-function bolt(ctx: Ctx, caster: Creature, spell: BoltSpellDef, target: Creature): Creature | undefined {
-  const { state } = ctx
-  const path = projectilePath(state.levels[caster.depth]!, caster, target, spell.range)
-  const struck = firstCreatureOnPath(state, caster.depth, path, caster.id)
-  recordTrail(ctx, caster, struck ? path.slice(0, struck.index + 1) : path, { spellId: spell.id })
+function launchProjectile(ctx: Ctx, caster: Creature, spell: ProjectileSpellDef, target: Creature): Creature | undefined {
+  const { flight, struck } = traceProjectile(ctx.state, caster, caster, target, spell.range)
+  recordTrail(ctx, caster, flight, { kind: 'spell', spellId: spell.id })
   if (!struck) return undefined
-  const hit = resolveAttack(ctx, caster, struck.creature, spellAttack(spell, spellPower(caster)))
-  return hit ? struck.creature : undefined
+  const hit = resolveAttack(ctx, caster, struck, spellAttack(spell, spellPower(caster)))
+  return hit ? struck : undefined
 }
 
 /** Атака снарядом заклинания: навыка магии у монстров нет, точность растёт с fighting. */
-function spellAttack(spell: BoltSpellDef, power: number | undefined): ChosenAttack {
+function spellAttack(spell: ProjectileSpellDef, power: number | undefined): ChosenAttack {
   return {
     profile: {
       damage: spellDamage(spell.damage, power),

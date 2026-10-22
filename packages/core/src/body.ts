@@ -2,7 +2,6 @@
 import {
   BODY_PLANS,
   ITEMS,
-  MONSTERS,
   SKILLS,
   SLOTS,
   type ArmourDef,
@@ -15,7 +14,7 @@ import {
   type SlotId,
   type WeaponDef,
 } from '@gene/data'
-import type { BodyPartState, Creature, GameState, ItemInstance } from './state'
+import { speciesOf, type BodyPartState, type Creature, type GameState, type ItemInstance } from './state'
 import { skillLevelFromXp, stageIndex } from './combat/formulas'
 
 export function planOf(c: Creature): BodyPlanDef {
@@ -100,10 +99,10 @@ export function isEquipped(c: Creature, itemId: string): SlotId | undefined {
   return undefined
 }
 
-/** Уровень навыка существа: у игрока — из базы знаний ядра, у монстра — из данных вида. */
+/** Уровень навыка существа: у игрока — из базы знаний Ядра, у монстра — из данных вида. */
 export function skillLevel(state: GameState, c: Creature, skill: SkillId): number {
   if (c.kind === 'player') return skillLevelFromXp(state.knowledge.skillXp[skill] ?? 0)
-  const def = MONSTERS[c.kind]
+  const def = speciesOf(c)
   return def ? speciesSkill(def, skill) : 0
 }
 

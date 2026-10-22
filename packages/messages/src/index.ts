@@ -22,6 +22,7 @@ import {
   type Case,
   type DamageType,
   type RejectReasonKey,
+  type SpellId,
   type WordForms,
 } from '@gene/data'
 import { createRng, pick, type ActorRef, type AttackRef, type GameEvent, type LogMessage, type RngState } from '@gene/core'
@@ -122,10 +123,8 @@ function itemWords(defId: string): WordForms {
   return def.name
 }
 
-function spellWords(spellId: string): WordForms {
-  const def = SPELLS[spellId]
-  if (!def) throw new Error(`messages: неизвестное заклинание ${spellId}`)
-  return def.name
+function spellWords(spellId: SpellId): WordForms {
+  return SPELLS[spellId].name
 }
 
 /** Чем нанесён удар: оружие, снаряд, заклинание или естественная атака. */
@@ -344,7 +343,7 @@ export function renderEvents(events: GameEvent[], viewerId: string, opts: Render
         let keys = ['spellFizzled']
         if (e.type === 'spellCast') {
           roles.target = creatureRole(e.target, viewerId)
-          keys = [`spellCast.${e.spellId}`, `spellCast.${SPELLS[e.spellId]?.effect ?? 'bolt'}`]
+          keys = [`spellCast.${e.spellId}`, `spellCast.${SPELLS[e.spellId].effect}`]
         }
         push(msg(choose(rng, keys, { subject: 'caster', roles }), turn, 'narrative'))
         break

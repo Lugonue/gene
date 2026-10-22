@@ -360,8 +360,8 @@ export const TEMPLATES: Record<string, string[]> = {
   'projectileLanded.floor': ['{projectile.nom} {verb:падать@projectile} на пол.'],
 
   // ---------- Заклинания монстров ----------
-  // spellCast.<id заклинания> → spellCast.<bolt|heal>. Усталость — словами, без чисел и терминов.
-  'spellCast.bolt': [
+  // spellCast.<id заклинания> → spellCast.<projectile|heal>. Усталость — словами, без чисел и терминов.
+  'spellCast.projectile': [
     '{caster.nom} {verb:выпускать@caster} {spell.acc} в {target.acc}.',
     '{caster.nom} {verb:швырять@caster} {spell.acc} в {target.acc}.',
   ],

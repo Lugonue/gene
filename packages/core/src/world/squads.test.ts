@@ -1,24 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { FACTIONS, ITEMS, MONSTERS, RANGED_SUPPLY } from '@gene/data'
-import { levelThreatBudget } from '../combat/formulas'
+import { FACTIONS, ITEMS, MONSTERS } from '@gene/data'
+import { RANGED_SUPPLY } from '../combat/formulas'
 import { createRng } from '../rng'
-import { planSquads, type SquadPlan } from './squads'
+import { planSquads, speciesThreat, type SquadPlan } from './squads'
 
+// Угроза реально поставленных на уровень монстров проверяется в world.test.ts.
 const roles = (squad: SquadPlan) => squad.members.map((m) => MONSTERS[m.species]!.role)
-const total = (squads: SquadPlan[]) => squads.reduce((s, q) => s + q.threat, 0)
 
 describe('отряды уровня', () => {
-  it('суммарная угроза уровня держится в пределах бюджета', () => {
-    for (let seed = 1; seed <= 50; seed++) {
-      for (const depth of [1, 2, 3, 4]) {
-        const budget = levelThreatBudget(depth)
-        const sum = total(planSquads(createRng(seed), depth))
-        expect(sum, `сид ${seed}, уровень ${depth}`).toBeLessThanOrEqual(budget)
-        expect(sum, `сид ${seed}, уровень ${depth}`).toBeGreaterThanOrEqual(budget * 0.85)
-      }
-    }
-  })
-
   it('в отряде есть воин или зверь, магов не больше одного, стрелков не больше половины', () => {
     for (let seed = 1; seed <= 50; seed++) {
       for (const depth of [1, 2, 3, 4]) {
@@ -66,6 +55,16 @@ describe('отряды уровня', () => {
         }
       }
     }
+  })
+
+  it('заклинания вида добавляют угрозы, и сильные — больше слабых', () => {
+    for (const id of ['goblin_shaman', 'orc_warshaman', 'sorcerer', 'inquisitor', 'dragon_priest', 'dragonborn']) {
+      const def = MONSTERS[id]!
+      expect(speciesThreat(def, []), id).toBeGreaterThan(speciesThreat({ ...def, spells: [] }, []))
+    }
+    const shaman = MONSTERS.goblin_shaman!
+    const gain = (power: number) => speciesThreat({ ...shaman, spellPower: power }, []) - speciesThreat({ ...shaman, spells: [] }, [])
+    expect(gain(1)).toBeGreaterThan(gain(0.6))
   })
 
   it('снаряжение случайно: один вид встречается в разных комплектах', () => {

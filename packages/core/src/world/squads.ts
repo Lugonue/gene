@@ -4,8 +4,8 @@ import {
   ITEMS,
   LEADER_RETINUE,
   MONSTERS,
-  RANGED_SUPPLY,
   ROLE_GEAR,
+  SPELLS,
   SQUAD_SIZE,
   factionForDepth,
   type ArmourDef,
@@ -16,10 +16,17 @@ import {
   type MonsterRole,
   type WeaponDef,
 } from '@gene/data'
-import { levelThreatBudget, monsterThreat } from '../combat/formulas'
+import {
+  MAX_ARCHER_SHARE,
+  RANGED_SUPPLY,
+  ROLE_ARMOUR_CHANCE,
+  SQUAD_FILL_MAX_MISSES,
+  levelThreatBudget,
+  monsterThreat,
+} from '../combat/formulas'
 import { speciesSkill } from '../body'
 import { chance, pick, randInt, weightedIndex, type RngState } from '../rng'
-import type { Creature, GameState } from '../state'
+import { speciesOf, type Creature, type GameState } from '../state'
 
 /**
  * Член отряда — один монстр со своим снаряжением. Связку «наездник + зверь» (ADR 0002) можно будет
@@ -39,8 +46,6 @@ export interface SquadPlan {
 }
 
 const ARMOUR_KINDS: ArmourKind[] = ['head', 'body', 'hands', 'legs']
-/** Сколько раз подряд можно не уложиться в остаток бюджета, прежде чем уровень считается заполненным. */
-const MAX_MISSES = 20
 
 const isWeapon = (it: ItemDef | undefined): it is WeaponDef => it?.category === 'weapon'
 const isArmour = (it: ItemDef | undefined): it is ArmourDef => it?.category === 'armour'
@@ -63,13 +68,14 @@ export function rollGear(rng: RngState, def: MonsterDef, faction: FactionDef): s
     if (ranged?.ammo) gear.push(...Array<string>(randInt(rng, ...RANGED_SUPPLY.ammo)).fill(ranged.ammo))
     else if (ranged) gear.push(...Array<string>(randInt(rng, ...RANGED_SUPPLY.thrown) - 1).fill(weapon))
   }
-  if (role.armourChance <= 0) return gear
+  const armourChance = ROLE_ARMOUR_CHANCE[def.role]
+  if (armourChance <= 0) return gear
   for (const kind of ARMOUR_KINDS) {
     const pieces = faction.gear.filter((id) => {
       const it = ITEMS[id]
       return isArmour(it) && it.kind === kind
     })
-    if (pieces.length > 0 && chance(rng, role.armourChance)) gear.push(pick(rng, pieces))
+    if (pieces.length > 0 && chance(rng, armourChance)) gear.push(pick(rng, pieces))
   }
   return gear
 }
@@ -94,12 +100,18 @@ export function speciesThreat(def: MonsterDef, gear: string[]): number {
     dodging: speciesSkill(def, 'dodging'),
     absorb: items.filter(isArmour).reduce((s, it) => s + it.absorb, 0),
     trait: FACTIONS[def.faction].trait,
+    spells: (def.spells ?? []).flatMap((id) => {
+      const s = SPELLS[id]
+      if (!s) return []
+      return [{ amount: s.effect === 'heal' ? s.heal : s.damage, cooldown: s.cooldown }]
+    }),
+    spellPower: def.spellPower,
   })
 }
 
 /** Угроза монстра на уровне — по виду и надетому снаряжению. */
 export function creatureThreat(state: GameState, c: Creature): number {
-  const def = MONSTERS[c.kind]
+  const def = speciesOf(c)
   if (!def) return 0
   const gear = Object.values(c.equipment).map((id) => state.items[id]!.defId)
   return speciesThreat(def, gear)
@@ -120,7 +132,7 @@ function rollSquad(rng: RngState, faction: FactionDef, size: number, leader?: Mo
     const allowed = pool.filter((m) => {
       if (i === 0) return m.role === 'warrior' || m.role === 'beast'
       if (m.role === 'mage') return count('mage') === 0
-      if (m.role === 'archer') return (count('archer') + 1) * 2 <= total
+      if (m.role === 'archer') return count('archer') + 1 <= total * MAX_ARCHER_SHARE
       return true
     })
     picked.push(
@@ -156,7 +168,7 @@ export function planSquads(rng: RngState, depth: number): SquadPlan[] {
   }
   const rollSize = (): number => randInt(rng, SQUAD_SIZE[0], SQUAD_SIZE[1])
   let size = rollSize()
-  for (let misses = 0; misses < MAX_MISSES;) {
+  for (let misses = 0; misses < SQUAD_FILL_MAX_MISSES;) {
     const squad = rollSquad(rng, faction, size)
     if (squad.threat <= remaining) {
       squads.push(squad)

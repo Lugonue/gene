@@ -1,8 +1,7 @@
 // МОДУЛЬ-ЗАГЛУШКА: модель времени (см. README.md рядом).
 // Энергетическая модель в стиле DCSS: у каждого существа есть момент следующего хода nextActAt (aut).
 // Ходит существо с наименьшим nextActAt; после действия nextActAt увеличивается на стоимость действия.
-import { MONSTERS } from '@gene/data'
-import type { Creature, GameState } from '../state'
+import { speciesOf, type Creature, type GameState } from '../state'
 import { SLOW_COST_MUL, SLOW_DURATION, moveCostMultiplier } from '../combat/formulas'
 
 export type ActionKind = 'move' | 'attack' | 'wait' | 'item' | 'stairs'
@@ -14,7 +13,7 @@ export const NORMAL_SPEED = 10
 
 export function creatureSpeed(c: Creature): number {
   if (c.kind === 'player') return NORMAL_SPEED
-  return MONSTERS[c.kind]?.speed ?? NORMAL_SPEED
+  return speciesOf(c)?.speed ?? NORMAL_SPEED
 }
 
 /** Стоимость действия (aut) с учётом скорости, ран (модификатор от ног — только для движения) и замедления. */

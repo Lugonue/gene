@@ -3,12 +3,12 @@
 import { ITEMS, type WeaponDef } from '@gene/data'
 import type { Ctx } from '../context'
 import type { RejectReason } from '../events'
-import type { ProjectileTrail } from '../protocol'
-import { creatureAt, player, tileAt, type Creature, type GameState, type ItemInstance, type LevelState, type Pos } from '../state'
+import type { ProjectileKind } from '../protocol'
+import { cellIndex, creatureAt, tileAt, type Creature, type GameState, type ItemInstance, type LevelState, type Pos } from '../state'
 import { equippedWeapon, isEquipped } from '../body'
 import { destroyItem, dropAt, removeFromOwner } from '../items'
 import { blocksSight } from '../world/fov'
-import { playerVisibleCells } from '../view'
+import { playerSeesAny } from '../view'
 import { durabilityEfficiency, projectileBreaks } from './formulas'
 import { actorRef, rangedAttack, resolveAttack } from './attack'
 
@@ -32,15 +32,31 @@ export function readyToShoot(state: GameState, c: Creature): ShotReady | RejectR
   return ammo ? { ...base, ammo } : 'noAmmo'
 }
 
-export function distance(a: Pos, b: Pos): number {
-  return Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y))
+export interface ProjectileTrace {
+  /** Вся прямая до дальности (до стены или закрытой двери). */
+  path: Pos[]
+  /** Пройденная часть — до первого существа на пути включительно. */
+  flight: Pos[]
+  /** Первое существо на пути (кроме стрелка). */
+  struck?: Creature
 }
 
 /**
- * Клетки полёта снаряда из from через to — прямая (DDA), продолжается за цель до дальности range.
- * Обрывается перед стеной или закрытой дверью; клетка from не входит.
+ * Полёт снаряда стрелка shooter из клетки from в сторону to: прямая (DDA) продолжается за цель до дальности range,
+ * обрывается перед стеной или закрытой дверью и останавливается на первом существе (кроме стрелка).
  */
-export function projectilePath(level: LevelState, from: Pos, to: Pos, range: number): Pos[] {
+export function traceProjectile(state: GameState, shooter: Creature, from: Pos, to: Pos, range: number): ProjectileTrace {
+  const path = projectilePath(state.levels[shooter.depth]!, from, to, range)
+  for (let i = 0; i < path.length; i++) {
+    const q = path[i]!
+    const creature = creatureAt(state, shooter.depth, q.x, q.y)
+    if (creature && creature.id !== shooter.id) return { path, flight: path.slice(0, i + 1), struck: creature }
+  }
+  return { path, flight: path }
+}
+
+/** Клетки прямой из from через to до дальности range; клетка from не входит. */
+function projectilePath(level: LevelState, from: Pos, to: Pos, range: number): Pos[] {
   const dx = to.x - from.x
   const dy = to.y - from.y
   const n = Math.max(Math.abs(dx), Math.abs(dy))
@@ -55,35 +71,17 @@ export function projectilePath(level: LevelState, from: Pos, to: Pos, range: num
   return path
 }
 
-/** Первое существо на пути снаряда (кроме стрелка) и номер его клетки. */
-export function firstCreatureOnPath(
-  state: GameState,
-  depth: number,
-  path: Pos[],
-  shooterId: string,
-): { creature: Creature; index: number } | undefined {
-  for (let index = 0; index < path.length; index++) {
-    const q = path[index]!
-    const creature = creatureAt(state, depth, q.x, q.y)
-    if (creature && creature.id !== shooterId) return { creature, index }
-  }
-  return undefined
-}
-
 /** Выстрел или бросок из клетки стрелка в сторону клетки target. Готовность проверяет вызывающий. */
 export function fire(ctx: Ctx, shooter: Creature, target: Pos, ready: ShotReady): void {
   const { state } = ctx
-  const level = state.levels[shooter.depth]!
-  const path = projectilePath(level, shooter, target, ready.range)
-  const struck = firstCreatureOnPath(state, shooter.depth, path, shooter.id)
-  const flight = struck ? path.slice(0, struck.index + 1) : path
+  const { path, flight, struck } = traceProjectile(state, shooter, shooter, target, ready.range)
   const projectileDefId = ready.ammo?.defId ?? ready.def.id
   const land = flight[flight.length - 1] ?? { x: shooter.x, y: shooter.y }
 
   ctx.events.push({ type: 'shotFired', attacker: actorRef(shooter), weaponDefId: ready.def.id, projectileDefId })
-  recordTrail(ctx, shooter, flight, { itemDefId: projectileDefId })
+  recordTrail(ctx, shooter, flight, { kind: 'item', itemDefId: projectileDefId })
 
-  const hit = struck ? resolveAttack(ctx, shooter, struck.creature, rangedAttack(ready.inst, ready.def, projectileDefId)) : false
+  const hit = struck ? resolveAttack(ctx, shooter, struck, rangedAttack(ready.inst, ready.def, projectileDefId)) : false
   if (!struck) ctx.events.push({ type: 'projectileLanded', projectileDefId, wall: path.length < ready.range })
 
   if (ready.ammo) {
@@ -112,13 +110,9 @@ function throwWeapon(ctx: Ctx, owner: Creature, inst: ItemInstance, land: Pos): 
 }
 
 /** Полёт попадает в анимацию, если игрок видит стрелка или хоть одну клетку пути. what — что летит. */
-export function recordTrail(ctx: Ctx, shooter: Creature, flight: Pos[], what: Omit<ProjectileTrail, 'cells'>): void {
+export function recordTrail(ctx: Ctx, shooter: Creature, flight: Pos[], what: ProjectileKind): void {
   const { state } = ctx
-  const p = player(state)
-  if (p.depth !== shooter.depth || flight.length === 0) return
-  const level = state.levels[p.depth]!
-  const visible = playerVisibleCells(state)
-  const idx = (q: Pos): number => q.y * level.width + q.x
-  if (!visible.has(idx(shooter)) && !flight.some((q) => visible.has(idx(q)))) return
-  ;(ctx.projectiles ??= []).push({ cells: flight.map(idx), ...what })
+  if (flight.length === 0 || !playerSeesAny(state, shooter.depth, [shooter, ...flight])) return
+  const level = state.levels[shooter.depth]!
+  ;(ctx.projectiles ??= []).push({ ...what, cells: flight.map((q) => cellIndex(level, q)) })
 }

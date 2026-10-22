@@ -1,4 +1,4 @@
-// База знаний ядра: опыт навыков, изученность типов предметов и явлений (только у игрока).
+// База знаний Ядра: опыт навыков, изученность типов предметов и явлений (только у игрока).
 import { ITEMS, type PhenomenonId, type SkillId } from '@gene/data'
 import type { Ctx } from './context'
 import { killXp, phenomenonStatusFor, skillLevelFromXp, studyStatusFor } from './combat/formulas'
@@ -28,7 +28,7 @@ export function distributeKillXp(ctx: Ctx, monsterXp: number): void {
   k.recentUse = {}
 }
 
-/** Первое знакомство ядра с типом снаряжения. */
+/** Первое знакомство Ядра с типом снаряжения. */
 export function encounterItemType(ctx: Ctx, defId: string): void {
   const def = ITEMS[defId]
   if (!def || def.category === 'consumable') return
@@ -50,7 +50,7 @@ export function studyItemType(ctx: Ctx, defId: string, amount: number): void {
   if (after !== before) ctx.events.push({ type: 'studyChanged', itemDefId: defId, status: after })
 }
 
-/** Добавить данные о явлении; при первом наблюдении ядро фиксирует его под условным именем. */
+/** Добавить данные о явлении; при первом наблюдении Ядро фиксирует его под условным именем. */
 export function studyPhenomenon(ctx: Ctx, id: PhenomenonId, amount: number): void {
   const phenomena = (ctx.state.knowledge.phenomena ??= {})
   let entry = phenomena[id]

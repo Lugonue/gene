@@ -1,6 +1,6 @@
 // МОДУЛЬ-ЗАГЛУШКА: все числа и формулы боя, ран, прочности, регенерации и опыта (см. README.md рядом).
 // Остальной код core не содержит собственных боевых констант и вызывает только функции отсюда.
-import type { BodyPartDef, DamageType, FactionTrait, Material, PartTag, SkillId, WoundStage } from '@gene/data'
+import type { BodyPartDef, DamageType, FactionTrait, Material, MonsterRole, PartTag, SkillId, WoundStage } from '@gene/data'
 import { nextFloat, randInt, chance as roll, weightedIndex, type RngState } from '../../rng'
 import type { BionicUpgrades, BodyPartState, Creature, ItemInstance, StudyStatus } from '../../state'
 import { mainHand, offHand, partDef, partsWithTag } from '../../body'
@@ -459,8 +459,12 @@ export function phenomenonStatusFor(data: number): StudyStatus {
 /** Доля HP, ниже которой монстр может отступить: трусливые фракции бегут раньше. */
 const FLEE_HP_SHARE = 0.25
 const COWARDLY_FLEE_HP_SHARE = 0.5
-/** Сколько времени (aut) фракция с чертой relentless идёт по следу игрока, пропавшего из виду. */
+/**
+ * Сколько времени (aut) фракция с чертой relentless ищет игрока, пропавшего из виду: дойдя до места,
+ * где видела его в последний раз, осматривает клетки вокруг него в пределах SEARCH_RADIUS.
+ */
 export const TRACK_TIME = 200
+export const SEARCH_RADIUS = 6
 
 export function wantsToFlee(rng: RngState, c: Creature, trait?: FactionTrait): boolean {
   if (trait === 'fearless') return false
@@ -491,17 +495,45 @@ export interface ThreatInput {
   /** Сумма поглощения надетой брони. */
   absorb: number
   trait: FactionTrait
+  /** Заклинания вида: база урона снаряда или лечения и перезарядка; spellPower — сила вида. */
+  spells: { amount: number; cooldown: number }[]
+  spellPower?: number
 }
 
 /** Бесстрашные и упорные опаснее, трусливые — слабее своих чисел. */
 const TRAIT_THREAT: Record<FactionTrait, number> = { cowardly: 0.9, fearless: 1.1, relentless: 1.1, rallying: 1 }
+/** Вклад заклинания в угрозу: урон (лечение) × сила за столько aut, делённое на перезарядку. */
+const SPELL_THREAT_AUT = 20
 
-/** Угроза монстра: нападение (урон × навыки) плюс живучесть (hp, броня, уклонение), × скорость и черта фракции. */
+/**
+ * Угроза монстра: нападение (урон × навыки, плюс заклинания — чем сильнее и чаще, тем больше) плюс живучесть
+ * (hp, броня, уклонение), × скорость и черта фракции.
+ */
 export function monsterThreat(t: ThreatInput): number {
-  const offence = t.damage * (1 + 0.04 * t.attackSkill + 0.02 * t.fighting) + t.accuracy / 4
+  const spells = t.spells.reduce((s, sp) => s + (spellDamage(sp.amount, t.spellPower) * SPELL_THREAT_AUT) / sp.cooldown, 0)
+  const offence = t.damage * (1 + 0.04 * t.attackSkill + 0.02 * t.fighting) + t.accuracy / 4 + spells
   const defence = t.maxHp / 4 + t.absorb + (t.evasion + 1.5 * t.dodging) / 3
   return Math.max(1, Math.round((offence + defence) * (t.speed / 10) * TRAIT_THREAT[t.trait]))
 }
+
+// ---------------------------------------------------------------------------
+// Генерация отрядов (виды, наборы снаряжения и размеры отрядов — в data)
+// ---------------------------------------------------------------------------
+
+/** Сколько раз подряд отряд может не уложиться в остаток бюджета, прежде чем уровень считается заполненным. */
+export const SQUAD_FILL_MAX_MISSES = 20
+/** Наибольшая доля стрелков в отряде. */
+export const MAX_ARCHER_SHARE = 0.5
+/** Шанс надеть броню на каждый вид брони (голова, тело, руки, ноги), если она есть в наборе фракции. */
+export const ROLE_ARMOUR_CHANCE: Record<MonsterRole, number> = {
+  warrior: 0.6,
+  archer: 0.35,
+  mage: 0.15,
+  beast: 0,
+  leader: 0.9,
+}
+/** Запас стрелка-монстра: боеприпасы к метателю или число метательных копий (вместе с тем, что в руке). */
+export const RANGED_SUPPLY: { ammo: [number, number]; thrown: [number, number] } = { ammo: [6, 10], thrown: [2, 4] }
 
 /** Бюджет угрозы по глубине (≈ 8–12 монстров на уровень); в него входит и отряд вожака. */
 const LEVEL_THREAT_BUDGET = [0, 120, 230, 260, 280]

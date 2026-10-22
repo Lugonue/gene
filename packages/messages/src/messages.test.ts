@@ -220,14 +220,14 @@ describe('сообщения: падежи и род (контрольные п�
     expect(renderEvents(e, 'p', { seed: 9, turn: 3 })).toEqual(renderEvents(e, 'p', { seed: 9, turn: 3 }))
   })
 
-  it('системные сообщения ядра помечены как system', () => {
+  it('системные сообщения Ядра помечены как system', () => {
     const out = renderEvents([{ type: 'newItemType', itemDefId: 'mace' }], 'p')
     expect(out[0]).toMatchObject({ kind: 'system', text: '[ЯДРО] Новый тип оружия: булава. Анализ начат.' })
   })
 })
 
 describe('сообщения автоисследования и бега', () => {
-  it('замеченные объекты и окончание — голосом ядра', () => {
+  it('замеченные объекты и окончание — голосом Ядра', () => {
     const events: GameEvent[] = [
       { type: 'itemsNoticed', itemDefIds: ['bandage', 'bandage', 'short_sword'] },
       { type: 'featureNoticed', feature: 'stairsDown' },
@@ -396,7 +396,7 @@ describe('сообщения заклинаний монстров', () => {
 
   it('попадание снарядом заклинания — в обе стороны, по всем частям', () => {
     for (const spell of Object.values(SPELLS)) {
-      if (spell.effect !== 'bolt') continue
+      if (spell.effect !== 'projectile') continue
       const attack: AttackRef = { kind: 'spell', spellId: spell.id, damageType: spell.damageType }
       for (const part of BODY_PLANS.humanoid!.parts) {
         expectClean(combatEvents(mon('dragon_priest'), PLAYER, attack, part.id, 'bionic'))
@@ -424,7 +424,7 @@ describe('сообщения заклинаний монстров', () => {
   })
 })
 
-describe('сообщения ядра о явлениях', () => {
+describe('сообщения Ядра о явлениях', () => {
   const text = (e: GameEvent): string => renderEvents([e], 'p')[0]!.text
 
   it('первое наблюдение — условное имя без настоящего названия', () => {
@@ -435,7 +435,7 @@ describe('сообщения ядра о явлениях', () => {
     })
   })
 
-  it('переходы стадий и открытый рецепт — голосом ядра', () => {
+  it('переходы стадий и открытый рецепт — голосом Ядра', () => {
     const partial = text({ type: 'phenomenonStudyChanged', phenomenon: 'frost_bolt', n: 2, status: 'partial' })
     expect(partial).toMatch(/^\[ЯДРО\] .*криогенная аномалия №2/)
     expect(partial).not.toMatch(/ледян/)

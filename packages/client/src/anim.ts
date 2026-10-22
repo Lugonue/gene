@@ -49,9 +49,12 @@ export function playFrames(frames: MoveFrame[], onDone: () => void): void {
 
 /** Символ и цвет снаряда: предмет или заклинание-снаряд (без своего символа — черта). */
 function projectileLook(trail: ProjectileTrail): { glyph?: string; color: string } {
-  const spell = trail.spellId ? SPELLS[trail.spellId] : undefined
-  if (spell?.effect === 'bolt') return { ...(spell.glyph ? { glyph: spell.glyph } : {}), color: spell.color }
-  const def = trail.itemDefId ? ITEMS[trail.itemDefId] : undefined
+  if (trail.kind === 'spell') {
+    const spell = SPELLS[trail.spellId]
+    if (spell.effect === 'projectile') return { ...(spell.glyph ? { glyph: spell.glyph } : {}), color: spell.color }
+    return { color: '#ffffff' }
+  }
+  const def = ITEMS[trail.itemDefId]
   const glyph = def?.category === 'consumable' ? def.projectileGlyph : undefined
   return { ...(glyph ? { glyph } : {}), color: def?.color ?? '#ffffff' }
 }

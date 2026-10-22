@@ -1,5 +1,5 @@
 // Структурированные события, которые возвращает core. Превращение в текст — в @gene/messages.
-import type { DamageType, Material, PhenomenonId, RejectReasonKey, SkillId, SlotId, WoundStage } from '@gene/data'
+import type { DamageType, Material, PhenomenonId, RejectReasonKey, SpellId, SkillId, SlotId, WoundStage } from '@gene/data'
 import type { StudyStatus } from './state'
 import type { FeatureKind } from './world/notice'
 import type { FatigueStage } from './combat/formulas'
@@ -16,7 +16,7 @@ export type AttackRef =
   /** Выстрел или бросок: itemDefId — оружие, projectileDefId — боеприпас или само метательное оружие. */
   | { kind: 'ranged'; itemDefId: string; projectileDefId: string; damageType: DamageType }
   /** Заклинание-снаряд (id из SPELLS). */
-  | { kind: 'spell'; spellId: string; damageType: DamageType }
+  | { kind: 'spell'; spellId: SpellId; damageType: DamageType }
 
 export type HitSeverity = 'absorbed' | 'light' | 'medium' | 'heavy'
 
@@ -83,9 +83,9 @@ export type GameEvent =
   /** Снаряд никого не задел: упал на пол или ударился в стену. */
   | { type: 'projectileLanded'; projectileDefId: string; wall: boolean }
   /** Монстр колдует: снаряд в цель или лечение союзника-цели. */
-  | { type: 'spellCast'; caster: ActorRef; spellId: string; target: ActorRef }
+  | { type: 'spellCast'; caster: ActorRef; spellId: SpellId; target: ActorRef }
   /** Срыв: ход и перезарядка потрачены, эффекта нет. */
-  | { type: 'spellFizzled'; caster: ActorRef; spellId: string }
+  | { type: 'spellFizzled'; caster: ActorRef; spellId: SpellId }
   /** Усталость заклинателя перешла на новую ступень. */
   | { type: 'casterTired'; caster: ActorRef; stage: Exclude<FatigueStage, 'fresh'> }
   | { type: 'itemsHere'; itemDefIds: string[] }

@@ -1,6 +1,6 @@
 # Исправления по ревью ветки factions
 
-Status: ready-for-agent
+Status: resolved
 Type: task
 
 Спека: `../spec.md`. Ревью: `git diff 49b1c68...b805a0f`. Каждое отклонение от спеки, которое остаётся, — в `DECISIONS.md`.
@@ -38,3 +38,5 @@ Type: task
 - `pnpm test`, `pnpm typecheck`, `pnpm lint` зелёные.
 
 ## Comments
+
+- 2026-10-22: сделаны все 14 пунктов. Орден больше не знает позицию невидимого игрока: идёт к `lastSeen`, а дойдя, ещё `TRACK_TIME` осматривает случайные клетки в пределах `SEARCH_RADIUS` от него (`searchFrom` в `Creature.ai`). Кобольды бегут к живому вожаку, иначе к ближайшему не убегающему союзнику (`rallyPoint`, `allies`). Вожак встаёт в другую комнату, если в последней не помещаются он и воин/зверь (`leaderCells`). Угроза учитывает заклинания (`monsterThreat`, вход `spells`/`spellPower`). Бюджет проверяется по поставленным монстрам (`world.test.ts`, 50 сидов); проверка плана из `squads.test.ts` убрана. Числа генерации (`ROLE_ARMOUR_CHANCE`, `RANGED_SUPPLY`, `MAX_ARCHER_SHARE`, `SQUAD_FILL_MAX_MISSES`) — в `combat/formulas`; `ROLE_GEAR` (навыки), `SQUAD_SIZE`, `LEADER_RETINUE` остались в `data` как содержание — записано в `DECISIONS.md`. Переименования: `ProjectileSpellDef`/`'projectile'`, ключ шаблона `spellCast.projectile`; тип `SpellId`; `ProjectileTrail` — объединение по `kind`. Хелперы: `traceProjectile`, `playerSeesAny`, `cellIndex`, `distance` и `speciesOf` (в `state.ts`), `spendAttack`. «Ядро» с заглавной — заодно и в подсказках клиента. Не сделано: ручной `y * width + x` вне перечисленных в задаче файлов (`game.ts`, `view.ts`, `notice.ts`, `explore.ts`, `mapgen.ts`, клиент) оставлен.

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { applyCommand } from './game'
-import { MAP_HEIGHT, MAP_WIDTH, TILE, player, setTile, tileAt, type Command } from './state'
+import { MAP_HEIGHT, MAP_WIDTH, TILE, player, setTile, tileAt, type Command, type Creature } from './state'
 import { generateLevel } from './world/mapgen'
 import { createRng } from './rng'
 import { newTestGame, run, stairsPos, walkTo } from './testing'
@@ -9,6 +9,8 @@ import { ensureLevel, findTile } from './world/level'
 import { FACTIONS, MONSTERS } from '@gene/data'
 import { levelThreatBudget } from './combat/formulas'
 import { creatureThreat } from './world/squads'
+import { populateLevel } from './world/populate'
+import { spawnMonster } from './monsters'
 
 describe('генерация уровней', () => {
   it('уровень 80×40, есть нужные лестницы и портал', () => {
@@ -48,15 +50,15 @@ describe('фракции на уровнях', () => {
     }
   })
 
-  it('отряд стоит кучно, угроза уровня не превышает бюджет', () => {
-    for (let seed = 1; seed <= 20; seed++) {
+  it('отряд стоит кучно, суммарная угроза поставленных монстров держится в пределах бюджета', () => {
+    for (let seed = 1; seed <= 50; seed++) {
       const s = newTestGame(seed)
       for (const depth of [1, 2, 3, 4]) {
         ensureLevel(s, depth)
         const monsters = monstersOn(s, depth)
         const threat = monsters.reduce((sum, c) => sum + creatureThreat(s, c), 0)
-        expect(threat).toBeLessThanOrEqual(levelThreatBudget(depth))
-        expect(threat).toBeGreaterThanOrEqual(levelThreatBudget(depth) * 0.85)
+        expect(threat, `сид ${seed}, уровень ${depth}`).toBeLessThanOrEqual(levelThreatBudget(depth))
+        expect(threat, `сид ${seed}, уровень ${depth}`).toBeGreaterThanOrEqual(levelThreatBudget(depth) * 0.85)
         expect(monsters.every((c) => c.squad !== undefined)).toBe(true)
         const squads = new Map<string | undefined, typeof monsters>()
         for (const c of monsters) squads.set(c.squad, [...(squads.get(c.squad) ?? []), c])
@@ -77,6 +79,39 @@ describe('фракции на уровнях', () => {
           expect(reached.size, members.map((c) => c.kind).join()).toBe(members.length)
         }
       }
+    }
+  })
+
+  const leaderSquad = (s: ReturnType<typeof newTestGame>, monsters: Creature[]) => {
+    const leaders = monsters.filter((c) => MONSTERS[c.kind]!.role === 'leader')
+    expect(leaders).toHaveLength(1)
+    return monsters.filter((c) => c.squad === leaders[0]!.squad).map((c) => MONSTERS[c.kind]!.role)
+  }
+
+  it('на каждом сгенерированном уровне ровно один вожак, и в его отряде есть воин или зверь', () => {
+    for (let seed = 1; seed <= 40; seed++) {
+      const s = newTestGame(seed)
+      for (const depth of [1, 2, 3, 4]) {
+        ensureLevel(s, depth)
+        const roles = leaderSquad(s, monstersOn(s, depth))
+        expect(roles.some((r) => r === 'warrior' || r === 'beast'), `сид ${seed}, уровень ${depth}: ${roles.join()}`).toBe(true)
+      }
+    }
+  })
+
+  it('вожак встаёт в другую комнату, если в последней нет места', () => {
+    for (const depth of [1, 2, 3, 4]) {
+      const s = newTestGame(depth)
+      const gen = generateLevel(createRng(depth * 31), depth)
+      // Последнюю комнату целиком занимают посторонние существа — не из проверяемой расстановки.
+      const blockers = new Set(
+        gen.roomCells[gen.roomCells.length - 1]!.map((q) => spawnMonster(s, 'orc_warrior', depth, q.x, q.y).id),
+      )
+      for (const c of monstersOn(s, depth)) if (!blockers.has(c.id)) delete s.creatures[c.id]
+      populateLevel(s, gen)
+      const placed = monstersOn(s, depth).filter((c) => !blockers.has(c.id))
+      const roles = leaderSquad(s, placed)
+      expect(roles.some((r) => r === 'warrior' || r === 'beast'), roles.join()).toBe(true)
     }
   })
 

@@ -21,11 +21,8 @@ export function populateLevel(state: GameState, gen: GeneratedLevel): void {
   planSquads(rng, depth).forEach((squad, i) => {
     const size = squad.members.length
     let cells: Pos[] = []
-    if (squad.leader) {
-      // Вожак всегда стоит первым, поэтому при нехватке места остаётся он и ближайшая свита.
-      const last = rooms[rooms.length - 1]
-      if (last) cells = clusterCells(rng, last.filter(free), size)
-    } else {
+    if (squad.leader) cells = leaderCells(rng, rooms, free, size)
+    else {
       for (const room of shuffle(rng, [...rooms])) {
         cells = clusterCells(rng, room.filter(free), size)
         if (cells.length === size) break
@@ -48,6 +45,25 @@ export function populateLevel(state: GameState, gen: GeneratedLevel): void {
     const defId = itemIds[weightedIndex(rng, weights)]!
     createItem(state, defId, { kind: 'floor', depth, x: spot.x, y: spot.y })
   }
+}
+
+/**
+ * Клетки отряда вожака: на уровне ровно один вожак. Отряд урезается с конца, а первыми в нём стоят вожак
+ * и воин или зверь, поэтому годится комната, где помещаются хотя бы эти двое, — последняя, иначе любая другая.
+ * Если такой нет нигде, вожак встаёт хоть один там, где больше места.
+ */
+function leaderCells(rng: RngState, rooms: Pos[][], free: (p: Pos) => boolean, size: number): Pos[] {
+  const enough = Math.min(size, 2)
+  const last = rooms[rooms.length - 1]
+  if (!last) return []
+  let best = clusterCells(rng, last.filter(free), size)
+  if (best.length >= enough) return best
+  for (const room of shuffle(rng, rooms.slice(0, -1))) {
+    const cells = clusterCells(rng, room.filter(free), size)
+    if (cells.length >= enough) return cells
+    if (cells.length > best.length) best = cells
+  }
+  return best
 }
 
 /**

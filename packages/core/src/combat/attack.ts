@@ -1,9 +1,9 @@
 // Разрешение одной атаки (порядок шагов — ТЗ 5.5). Все числа — в ./formulas.
-import { ATTACKS, MONSTERS, type NaturalAttackDef, type WeaponDef } from '@gene/data'
+import { ATTACKS, type NaturalAttackDef, type WeaponDef } from '@gene/data'
 import type { Ctx } from '../context'
 import type { ActorRef, AttackRef } from '../events'
 import { pick } from '../rng'
-import type { Creature, ItemInstance } from '../state'
+import { speciesOf, type Creature, type ItemInstance } from '../state'
 import { armourInSlot, equippedWeapon, partDef, planOf, skillLevel } from '../body'
 import { distributeKillXp, gainSkillXp, studyItemType } from '../knowledge'
 import { dropToFloor } from '../items'
@@ -61,7 +61,7 @@ export function chooseAttack(ctx: Ctx, c: Creature): ChosenAttack {
   }
   let natural: NaturalAttackDef
   if (c.kind === 'player' || planOf(c).mainHand) natural = ATTACKS.fist!
-  else natural = pick(ctx.state.rng, MONSTERS[c.kind]?.attacks ?? [ATTACKS.fist!])
+  else natural = pick(ctx.state.rng, speciesOf(c)?.attacks ?? [ATTACKS.fist!])
   const usesFist = natural.id === 'fist'
   return {
     profile: {
@@ -103,7 +103,7 @@ export function resolveAttack(
     attackerSkill: skillLevel(state, attacker, profile.skill),
     attackerFighting: profile.skill === 'fighting' ? 0 : skillLevel(state, attacker, 'fighting'),
     targetDodging: skillLevel(state, target, 'dodging'),
-    targetEvasion: isPlayerTarget ? PLAYER_BASE_EVASION : (MONSTERS[target.kind]?.evasion ?? 0),
+    targetEvasion: isPlayerTarget ? PLAYER_BASE_EVASION : (speciesOf(target)?.evasion ?? 0),
   }
 
   // 2. Часть тела цели.
@@ -240,5 +240,5 @@ export function killCreature(
     ctx.events.push({ type: 'itemDropped', itemDefId: inst.defId, count: inst.count ?? 1, owner: actorRef(victim) })
   }
   delete state.creatures[victim.id]
-  if (killer?.kind === 'player') distributeKillXp(ctx, MONSTERS[victim.kind]?.xp ?? 0)
+  if (killer?.kind === 'player') distributeKillXp(ctx, speciesOf(victim)?.xp ?? 0)
 }

@@ -11,7 +11,7 @@ import Modal from './Modal.vue'
 const props = defineProps<{ mode: 'use' | 'drop' | 'disassemble' }>()
 const confirmId = ref<string | null>(null)
 
-const titles = { use: 'Применить', drop: 'Выбросить', disassemble: 'Разобрать (ядро получит данные о типе)' }
+const titles = { use: 'Применить', drop: 'Выбросить', disassemble: 'Разобрать (Ядро получит данные о типе)' }
 const items = computed(() =>
   (store.view?.inventory ?? []).filter((it) =>
     props.mode === 'use' ? !!consumableEffect(it) : props.mode === 'disassemble' ? it.category !== 'consumable' : true,

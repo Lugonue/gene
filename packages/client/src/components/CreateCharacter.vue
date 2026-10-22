@@ -36,7 +36,7 @@ function submit(): void {
       </fieldset>
 
       <fieldset>
-        <legend>Стартовое оружие (подобрано у входа, ядро успело его изучить)</legend>
+        <legend>Стартовое оружие (подобрано у входа, Ядро успело его изучить)</legend>
         <label v-for="id in START_WEAPONS" :key="id" class="choice">
           <input v-model="weapon" type="radio" :value="id" />
           {{ ITEMS[id]?.name.nom }}

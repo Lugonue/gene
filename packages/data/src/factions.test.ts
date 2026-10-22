@@ -25,6 +25,6 @@ describe('фракции и виды', () => {
     for (const m of Object.values(MONSTERS).filter((m) => m.role === 'beast')) {
       expect(m.bodyPlan, m.id).toBe('quadruped')
     }
-    expect(ROLE_GEAR.beast).toEqual({ weaponSkills: [], armourChance: 0 })
+    expect(ROLE_GEAR.beast).toEqual({ weaponSkills: [] })
   })
 })

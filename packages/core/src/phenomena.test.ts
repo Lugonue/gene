@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { SPELLS } from '@gene/data'
+import { SPELLS, type SpellId } from '@gene/data'
 import { castSpell } from './combat/spells'
 import { PHENOMENON_GAIN, PHENOMENON_THRESHOLDS, phenomenonStatusFor } from './combat/formulas'
 import { spawnMonster } from './monsters'
@@ -15,14 +15,14 @@ const dataOf = (s: GameState, id: string): number => s.knowledge.phenomena?.[id 
 /** Колдовство kind по игроку с дистанции; ищет сид, где исход подходит под want. */
 function castAtPlayer(
   kind: string,
-  spellId: string,
+  spellId: SpellId,
   want: (events: GameEvent[]) => boolean,
 ): { state: GameState; events: GameEvent[] } {
   for (let seed = 1; seed < 200; seed++) {
     const s = arenaGame(seed)
     const m = spawnMonster(s, kind, 1, 24, 20)
     const ctx: Ctx = { state: s, events: [] }
-    castSpell(ctx, m, SPELLS[spellId]!, player(s))
+    castSpell(ctx, m, SPELLS[spellId], player(s))
     if (want(ctx.events)) return { state: s, events: ctx.events }
   }
   throw new Error('не нашли подходящий сид')
