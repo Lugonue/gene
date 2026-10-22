@@ -8,6 +8,7 @@ import { armourInSlot, equippedWeapon, partDef, planOf, skillLevel, speciesOf } 
 import { distributeKillXp, gainSkillXp, studyItemType } from '../knowledge'
 import { dropToFloor } from '../items'
 import { applySlow } from '../time'
+import { alertStage, updateAlert } from '../alert'
 import {
   PLAYER_BASE_EVASION,
   SKILL_XP,
@@ -18,6 +19,7 @@ import {
   durabilityWear,
   hitSeverity,
   isStrongHit,
+  nextAlertStage,
   rollDamage,
   rollHit,
   splitDamage,
@@ -147,6 +149,7 @@ export function resolveAttack(
   target.hp -= split.total
   part.wound = woundStageFor(part)
   if (part.material === 'organic' && part.wound === 'crippled') part.needsTreatment = true
+  const criticalFlash = isPlayerTarget && nextAlertStage(alertStage(target), target.hp, target.maxHp) === 'critical'
 
   ctx.events.push({
     type: 'attackHit',
@@ -160,6 +163,7 @@ export function resolveAttack(
     ...(armour && absorbed > 0 ? { armourDefId: armour.def.id } : {}),
     severity: hitSeverity(damage, part),
     ...(isStrongHit(damage, target.maxHp, fromStage, part.wound) ? { strong: true as const } : {}),
+    ...(criticalFlash ? { criticalFlash: true as const } : {}),
   })
   if (stageIndex(part.wound) > stageIndex(fromStage)) {
     ctx.events.push({
@@ -173,6 +177,8 @@ export function resolveAttack(
       maxHp: part.maxHp,
     })
   }
+  // Ступень тревоги игрока; при гибели (целостность ≤ 0) сообщать о ней незачем.
+  if (target.hp > 0) updateAlert(ctx, target)
 
   // 6. Износ.
   if (profile.weapon) applyWear(ctx, attacker, profile.weapon, durabilityWear({ damage, armoured: !!armour }, profile.weapon, 'weapon'))

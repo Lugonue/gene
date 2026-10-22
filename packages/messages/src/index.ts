@@ -25,7 +25,7 @@ import {
   type SpellId,
   type WordForms,
 } from '@gene/data'
-import { createRng, pick, type ActorRef, type AttackRef, type GameEvent, type LogMessage, type RngState } from '@gene/core'
+import { createRng, pick, type ActorRef, type AlertStage, type AttackRef, type GameEvent, type LogMessage, type RngState } from '@gene/core'
 
 export interface RenderOptions {
   /** Номер хода — попадает в LogMessage и в сид выбора вариантов. */
@@ -456,6 +456,13 @@ export function renderEvents(events: GameEvent[], viewerId: string, opts: Render
         )
         break
 
+      case 'alertChanged': {
+        const raised = ALERT_ORDER.indexOf(e.to) > ALERT_ORDER.indexOf(e.from)
+        const key = raised ? `alertChanged.${e.to}` : 'alertChanged.stable'
+        push(msg(choose(rng, [key], { roles: {}, vars: { integrity: String(e.integrity) } }), turn, 'system'))
+        break
+      }
+
       case 'commandRejected':
         push({ text: rejectText(e.reason), kind: 'warning', turn })
         break
@@ -467,6 +474,8 @@ export function renderEvents(events: GameEvent[], viewerId: string, opts: Render
   }
   return out
 }
+
+const ALERT_ORDER: AlertStage[] = ['none', 'danger', 'critical']
 
 function stageRank(s: string): number {
   return ['none', 'bruised', 'wounded', 'crippled', 'severed'].indexOf(s)

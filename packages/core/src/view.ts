@@ -30,9 +30,11 @@ import {
   MAX_SKILL,
   PHENOMENON_THRESHOLDS,
   STUDY_THRESHOLDS,
+  type AlertStage,
 } from './combat/formulas'
 import { computeFov } from './world/fov'
 import { isDamagedPart, isFullyHealthy } from './health'
+import { alertStage } from './alert'
 import {
   cellIndex,
   player,
@@ -202,6 +204,8 @@ export interface PlayerView {
     fovRadius: number
     /** Зелью нечего лечить (`isFullyHealthy`): общий HP полон и органические части целы. */
     fullHealth: boolean
+    /** Ступень тревоги по целостности: 'critical' — виньетка и плашка «КРИТИЧЕСКОЕ СОСТОЯНИЕ» на клиенте. */
+    alert: AlertStage
     parts: PartView[]
   }
   inventory: ItemView[]
@@ -460,6 +464,7 @@ export function buildView(state: GameState): PlayerView {
       bodyPlan: p.bodyPlan,
       fovRadius: fovRadius(p),
       fullHealth: isFullyHealthy(p),
+      alert: alertStage(p),
       parts: p.parts.map((part) => ({
         id: part.defId,
         name: partDef(p, part).name.nom,

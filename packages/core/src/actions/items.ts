@@ -7,6 +7,7 @@ import { findPart, isEquipped, slotsForItem } from '../body'
 import { destroyItem, dropToFloor, giveItem, needsSlot } from '../items'
 import { encounterItemType, gainSkillXp, studyItemType } from '../knowledge'
 import { healCreature, isDamagedPart, isFullyHealthy } from '../health'
+import { updateAlert } from '../alert'
 import {
   SKILL_XP,
   STUDY_GAIN,
@@ -122,6 +123,7 @@ export function useAction(ctx: Ctx, itemId: string, targetPartId?: string, targe
       const before = p.hp
       healCreature(p, potionHeal(p))
       ctx.events.push({ type: 'potionDrunk', healed: p.hp - before })
+      updateAlert(ctx, p)
       break
     }
     case 'repairKit': {

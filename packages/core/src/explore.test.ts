@@ -131,6 +131,45 @@ describe('бег', () => {
   })
 })
 
+describe('ступени тревоги останавливают многоходовые действия', () => {
+  /** Целостность 40%, а ступень ещё не пересчитана (как в старом сохранении): первый же ход — вход в опасное состояние. */
+  function hurt(s: GameState): GameState {
+    const p = player(s)
+    p.hp = Math.floor(p.maxHp * 0.4)
+    delete p.alert
+    return s
+  }
+
+  it('вход в ступень прерывает отдых', () => {
+    const s = hurt(onMap(['#'.repeat(42), '#@' + '.'.repeat(39) + '#', '#'.repeat(42)]))
+    const r = apply(s, { type: 'rest' })
+    expect(r.events.filter((e) => e.type === 'alertChanged')).toMatchObject([{ from: 'none', to: 'danger' }])
+    expect(r.events.at(-1)).toEqual({ type: 'restInterrupted' })
+    expect(r.state.turn).toBe(s.turn + 1)
+    expect(player(r.state).alert).toBe('danger')
+  })
+
+  it('вход в ступень прерывает автоисследование и бег', () => {
+    const map = ['#'.repeat(42), '#@' + '.'.repeat(39) + '#', '#'.repeat(42)]
+    for (const cmd of [{ type: 'explore' }, { type: 'run', dir: 'e' }] as Command[]) {
+      const s = hurt(onMap(map))
+      const r = apply(s, cmd)
+      expect(r.events.some((e) => e.type === 'alertChanged')).toBe(true)
+      expect(player(r.state).x).toBe(2)
+    }
+  })
+
+  it('выход из ступени не прерывает отдых', () => {
+    const s = onMap(['#'.repeat(42), '#@' + '.'.repeat(39) + '#', '#'.repeat(42)])
+    const p = player(s)
+    p.hp = Math.ceil(p.maxHp * 0.55)
+    p.alert = 'danger'
+    const r = apply(s, { type: 'rest' })
+    expect(r.events.filter((e) => e.type === 'alertChanged')).toMatchObject([{ from: 'danger', to: 'none' }])
+    expect(r.events.some((e) => e.type === 'restInterrupted')).toBe(false)
+  })
+})
+
 describe('замечание объектов', () => {
   it('выброшенный игроком предмет не считается новым', () => {
     const s = onMap(['#'.repeat(42), '#@' + '.'.repeat(39) + '#', '#'.repeat(42)])
