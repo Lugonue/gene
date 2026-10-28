@@ -6,6 +6,7 @@ import {
   FACTIONS,
   ITEMS,
   MONSTERS,
+  ORGANIC_DESTROYED_LABEL,
   PHENOMENA,
   ROLE_LABELS,
   SKILLS,
@@ -30,9 +31,11 @@ import {
   MAX_SKILL,
   PHENOMENON_THRESHOLDS,
   STUDY_THRESHOLDS,
+  type AlertStage,
 } from './combat/formulas'
 import { computeFov } from './world/fov'
 import { isDamagedPart, isFullyHealthy } from './health'
+import { alertStage } from './alert'
 import {
   cellIndex,
   player,
@@ -202,6 +205,8 @@ export interface PlayerView {
     fovRadius: number
     /** Зелью нечего лечить (`isFullyHealthy`): общий HP полон и органические части целы. */
     fullHealth: boolean
+    /** Ступень тревоги по целостности: 'critical' — виньетка и плашка «КРИТИЧЕСКОЕ СОСТОЯНИЕ» на клиенте. */
+    alert: AlertStage
     parts: PartView[]
   }
   inventory: ItemView[]
@@ -217,7 +222,8 @@ export interface PlayerView {
 }
 
 export function woundLabel(part: BodyPartState): string {
-  if (part.material === 'bionic' && part.hp <= 0 && part.wound !== 'severed') return BIONIC_FAILURE_LABEL
+  if (part.hp <= 0 && part.wound !== 'severed')
+    return part.material === 'bionic' ? BIONIC_FAILURE_LABEL : ORGANIC_DESTROYED_LABEL
   return WOUND_LABELS[part.material][part.wound]
 }
 
@@ -460,6 +466,7 @@ export function buildView(state: GameState): PlayerView {
       bodyPlan: p.bodyPlan,
       fovRadius: fovRadius(p),
       fullHealth: isFullyHealthy(p),
+      alert: alertStage(p),
       parts: p.parts.map((part) => ({
         id: part.defId,
         name: partDef(p, part).name.nom,

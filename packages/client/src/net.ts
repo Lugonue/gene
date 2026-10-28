@@ -3,6 +3,7 @@ import type { ClientMsg, Command, ServerMsg } from '@gene/core'
 import { pushLog, pushWarning, store } from './store'
 import { playFrames, playProjectiles, skipAnimation } from './anim'
 import { nextScene } from './scene'
+import { nextFlash } from './alertFx'
 
 const TOKEN_KEY = 'gene.token'
 
@@ -63,6 +64,7 @@ function handle(msg: ServerMsg): void {
         store.view = msg.view
         pushLog(msg.messages, msg.fresh === true)
         store.scene = nextScene(store.scene, msg.moments, msg.fresh === true)
+        store.flashSeq = nextFlash(store.flashSeq, msg)
         if (msg.fresh) store.screen = 'game'
       }
       if (store.pending !== null && msg.seq === store.pending) store.pending = null

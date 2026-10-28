@@ -2,7 +2,7 @@
 import type { DamageType, Material, PhenomenonId, RejectReasonKey, SpellId, SkillId, SlotId, WoundStage } from '@gene/data'
 import type { StudyStatus } from './state'
 import type { FeatureKind } from './world/notice'
-import type { FatigueStage, ThreatTier } from './combat/formulas'
+import type { AlertStage, FatigueStage, ThreatTier } from './combat/formulas'
 
 /** Ссылка на существо в событии: id и вид ('player' или id монстра). */
 export interface ActorRef {
@@ -19,6 +19,16 @@ export type AttackRef =
   | { kind: 'spell'; spellId: SpellId; damageType: DamageType }
 
 export type HitSeverity = 'absorbed' | 'light' | 'medium' | 'heavy'
+
+/** Целостность и hp задетой части после удара. */
+export interface HitReadout {
+  /** Фактическая убыль целостности (урон с множителем торса). */
+  integrityLoss: number
+  integrity: number
+  maxIntegrity: number
+  partHp: number
+  partMaxHp: number
+}
 
 export type RejectReason = RejectReasonKey
 
@@ -51,6 +61,10 @@ export type GameEvent =
       severity: HitSeverity
       /** Сильный удар (порог — isStrongHit в модуле формул): повод для окна-сцены. */
       strong?: true
+      /** Удар по игроку ввёл его в критическое состояние или пришёлся уже в нём: клиент даёт яркую вспышку по краю. */
+      criticalFlash?: true
+      /** Только удар по игроку: состояние после удара — для цифр в журнале. */
+      readout?: HitReadout
     }
   | {
       type: 'woundChanged'
@@ -70,6 +84,11 @@ export type GameEvent =
       maxDurability: number
       efficiency: number
     }
+  /**
+   * Ступень тревоги игрока сменилась. integrity — целостность в процентах после изменения.
+   * Рост тяжести — вход (условие остановки многоходовых действий), снижение — «целостность стабилизирована».
+   */
+  | { type: 'alertChanged'; from: AlertStage; to: AlertStage; integrity: number }
   | { type: 'itemBroken'; owner: ActorRef; itemDefId: string }
   | {
       type: 'creatureDied'

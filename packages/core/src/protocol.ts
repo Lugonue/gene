@@ -11,6 +11,8 @@ export interface LogMessage {
   /** narrative — события мира; system — сообщения Ядра/диагностики (HUD); warning — отказы, ошибки. */
   kind: LogKind
   turn: number
+  /** Мелкая служебная пометка к записи (цифры урона); не входит в text, чтобы не мешать сворачиванию повторов. */
+  note?: string
 }
 
 /**
@@ -58,6 +60,8 @@ export type ServerMsg =
       projectiles?: ProjectileTrail[]
       /** Яркие моменты хода для окна-сцены (сцену выбирает клиент). */
       moments?: SceneMoment[]
+      /** За ход был удар по игроку в критическом состоянии: клиент даёт яркую вспышку по краю карты. */
+      criticalFlash?: true
     }
   | { type: 'gameOver'; summary: GameSummary }
   | { type: 'error'; message: string; seq?: number }

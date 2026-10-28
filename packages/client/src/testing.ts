@@ -47,6 +47,7 @@ export function viewFixture(over: { parts?: PartView[]; inventory?: ItemView[]; 
       bodyPlan: 'humanoid',
       fovRadius: 8,
       fullHealth: over.fullHealth ?? true,
+      alert: 'none',
       parts: over.parts ?? [part('head'), part('torso')],
     },
     inventory: over.inventory ?? [

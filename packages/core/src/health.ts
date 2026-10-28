@@ -3,6 +3,7 @@ import type { Ctx } from './context'
 import type { BodyPartState, Creature } from './state'
 import { organicHealCap, regenTick, stageIndex, woundStageFor } from './combat/formulas'
 import { actorRef } from './combat/attack'
+import { updateAlert } from './alert'
 
 /** Часть тела повреждена: hp неполный, есть стадия раны или ждёт перевязки. Одно правило для бинта, ремкомплекта, зелья и представления. */
 export function isDamagedPart(part: BodyPartState): boolean {
@@ -29,6 +30,7 @@ export function healCreature(c: Creature, heal: { hp: number; partFraction: numb
 export function applyRegen(ctx: Ctx, c: Creature, elapsed: number): void {
   const r = regenTick(c, elapsed)
   if (r.hp > 0) c.hp = Math.min(c.maxHp, c.hp + r.hp)
+  updateAlert(ctx, c)
   for (const { index, gain } of r.parts) {
     const part = c.parts[index]
     if (!part) continue

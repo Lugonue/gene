@@ -157,6 +157,34 @@ describe('влияние ран по тегам', () => {
   })
 })
 
+describe('голова и торс киборга на 0 hp', () => {
+  it('органическая — «разрушена», бионическая — «отказ»; голова на 0 hp действует на зрение как искалеченная', () => {
+    const s = newTestGame(6)
+    const p = player(s)
+    const head = findPart(p, 'head')!
+    cripple(head)
+    const crippledFov = buildView(s).player.fovRadius
+    head.hp = 0
+    head.wound = woundStageFor(head)
+    expect(head.wound).toBe('crippled')
+    const view = buildView(s)
+    expect(view.player.fovRadius).toBe(crippledFov)
+    const label = view.player.parts.find((v) => v.id === 'head')!.label
+    expect(label).toBe(head.material === 'organic' ? 'разрушена' : 'отказ')
+
+    const torso = findPart(p, 'torso')!
+    torso.hp = 0
+    torso.wound = woundStageFor(torso)
+    expect(torso.wound).toBe('crippled')
+    for (const material of ['organic', 'bionic'] as const) {
+      torso.material = material
+      expect(buildView(s).player.parts.find((v) => v.id === 'torso')!.label).toBe(
+        material === 'organic' ? 'разрушена' : 'отказ',
+      )
+    }
+  })
+})
+
 describe('смерть', () => {
   function hitUntil(s: GameState, attacker: Creature, target: Creature, done: () => boolean): Ctx {
     const ctx: Ctx = { state: s, events: [] }
@@ -173,6 +201,56 @@ describe('смерть', () => {
     const ctx = hitUntil(s, player(s), goblin, () => !s.creatures[goblin.id])
     const died = ctx.events.find((e) => e.type === 'creatureDied')
     expect(died).toMatchObject({ type: 'creatureDied', cause: 'vital', partId: 'head' })
+  })
+
+  it('киборг с разрушенной головой жив, пока есть целостность; монстр в той же ситуации гибнет', () => {
+    const s = newTestGame(7)
+    const goblin = freshMonster(s, 'goblin_brute')
+    const p = player(s)
+    for (const c of [p, goblin]) {
+      c.hp = c.maxHp = 10_000
+      for (const part of c.parts) if (part.defId !== 'head') part.wound = 'severed'
+      const head = findPart(c, 'head')!
+      head.hp = 0
+      head.wound = woundStageFor(head)
+    }
+    // Бьём по игроку, пока не будет попадания.
+    const ctx: Ctx = { state: s, events: [] }
+    for (let i = 0; i < 200 && !ctx.events.some((e) => e.type === 'attackHit'); i++) resolveAttack(ctx, goblin, p)
+    expect(ctx.events.some((e) => e.type === 'attackHit')).toBe(true)
+    expect(s.status).toBe('active')
+    expect(ctx.events.find((e) => e.type === 'creatureDied')).toBeUndefined()
+    expect(findPart(p, 'head')!.wound).toBe('crippled')
+
+    const ctx2 = hitUntil(s, p, goblin, () => !s.creatures[goblin.id])
+    expect(ctx2.events.find((e) => e.type === 'creatureDied')).toMatchObject({ cause: 'vital', partId: 'head' })
+  })
+
+  it('удар по искалеченному торсу снимает с целостности в 1.5 раза больше, чем по здоровому', () => {
+    // Одинаковое зерно — одинаковые броски; различается только стадия торса цели.
+    const losses = (torsoFrac: number): number[] => {
+      const s = newTestGame(21)
+      const goblin = freshMonster(s, 'goblin_brute')
+      const p = player(s)
+      for (const part of goblin.parts) if (part.defId !== 'torso') part.wound = 'severed'
+      const torso = findPart(goblin, 'torso')!
+      const ctx: Ctx = { state: s, events: [] }
+      const out: number[] = []
+      for (let i = 0; i < 300; i++) {
+        goblin.hp = goblin.maxHp = 100_000
+        torso.maxHp = 10_000
+        torso.hp = Math.ceil(torso.maxHp * torsoFrac)
+        torso.wound = woundStageFor(torso)
+        resolveAttack(ctx, p, goblin)
+        out.push(100_000 - goblin.hp)
+      }
+      return out
+    }
+    const healthy = losses(1)
+    const crippled = losses(0.2)
+    expect(healthy.filter((d) => d > 0).length).toBeGreaterThan(10)
+    // С точностью до округления до целого.
+    healthy.forEach((d, i) => expect(Math.abs(crippled[i]! - d * 1.5)).toBeLessThanOrEqual(0.5))
   })
 
   it('при обнулении общего HP', () => {
@@ -251,5 +329,54 @@ describe('монстры и ИИ', () => {
     const base = actionCost(wolf, 'move')
     for (const id of ['hind_left_leg', 'hind_right_leg']) cripple(findPart(wolf, id)!)
     expect(actionCost(wolf, 'move')).toBeGreaterThan(base)
+  })
+})
+
+describe('цифры входящего урона', () => {
+  it('удар по игроку несёт целостность и hp задетой части после удара; удар по монстру — нет', () => {
+    const s = newTestGame(5)
+    const p = player(s)
+    p.hp = p.maxHp = 100_000
+    for (const part of p.parts) part.hp = part.maxHp = 100_000
+    const g = freshMonster(s, 'goblin_brute')
+    g.hp = g.maxHp = 100_000
+    for (const part of g.parts) part.hp = part.maxHp = 100_000
+
+    const ctx: Ctx = { state: s, events: [] }
+    for (let i = 0; i < 100 && !ctx.events.some((e) => e.type === 'attackHit'); i++) resolveAttack(ctx, g, p)
+    const hit = ctx.events.find((e) => e.type === 'attackHit')
+    if (hit?.type !== 'attackHit') throw new Error('нет попадания')
+    const part = findPart(p, hit.partId)!
+    expect(hit.readout).toEqual({ integrityLoss: 100_000 - p.hp, integrity: p.hp, maxIntegrity: 100_000, partHp: part.hp, partMaxHp: 100_000 })
+
+    ctx.events = []
+    for (let i = 0; i < 100 && !ctx.events.some((e) => e.type === 'attackHit'); i++) resolveAttack(ctx, p, g)
+    const back = ctx.events.find((e) => e.type === 'attackHit')
+    if (back?.type !== 'attackHit') throw new Error('нет попадания')
+    expect(back.readout).toBeUndefined()
+  })
+
+  it('по искалеченному торсу убыль целостности в пометке — фактическая, больше урона по части', () => {
+    const s = newTestGame(5)
+    const p = player(s)
+    p.hp = p.maxHp = 100_000
+    for (const part of p.parts) part.hp = part.maxHp = 100_000
+    const torso = findPart(p, 'torso')!
+    torso.hp = 10_000
+    torso.wound = woundStageFor(torso)
+    expect(torso.wound).toBe('crippled')
+    const g = freshMonster(s, 'goblin_brute')
+
+    const ctx: Ctx = { state: s, events: [] }
+    let before = p.hp
+    for (let i = 0; i < 100 && !ctx.events.some((e) => e.type === 'attackHit' && e.damage > 1); i++) {
+      ctx.events = []
+      before = p.hp
+      resolveAttack(ctx, g, p)
+    }
+    const hit = ctx.events.find((e) => e.type === 'attackHit')
+    if (hit?.type !== 'attackHit' || !hit.readout) throw new Error('нет попадания')
+    expect(hit.readout.integrityLoss).toBe(before - p.hp)
+    expect(hit.readout.integrityLoss).toBeGreaterThan(hit.damage)
   })
 })

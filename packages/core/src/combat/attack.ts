@@ -4,10 +4,11 @@ import type { Ctx } from '../context'
 import type { ActorRef, AttackRef } from '../events'
 import { pick } from '../rng'
 import type { Creature, ItemInstance } from '../state'
-import { armourInSlot, equippedWeapon, partDef, planOf, skillLevel, speciesOf } from '../body'
+import { armourInSlot, equippedWeapon, findPart, partDef, planOf, skillLevel, speciesOf } from '../body'
 import { distributeKillXp, gainSkillXp, studyItemType } from '../knowledge'
 import { dropToFloor } from '../items'
 import { applySlow } from '../time'
+import { alertAfter, setAlert } from '../alert'
 import {
   PLAYER_BASE_EVASION,
   SKILL_XP,
@@ -140,13 +141,14 @@ export function resolveAttack(
   )
   const absorbed = Math.min(raw, absorbedRoll)
   const damage = raw - absorbed
-  const split = splitDamage(damage)
+  const split = splitDamage(damage, findPart(target, 'torso'))
 
   const fromStage = part.wound
   part.hp = Math.max(0, part.hp - split.part)
   target.hp -= split.total
   part.wound = woundStageFor(part)
   if (part.material === 'organic' && part.wound === 'crippled') part.needsTreatment = true
+  const alertTo = alertAfter(target)
 
   ctx.events.push({
     type: 'attackHit',
@@ -160,6 +162,18 @@ export function resolveAttack(
     ...(armour && absorbed > 0 ? { armourDefId: armour.def.id } : {}),
     severity: hitSeverity(damage, part),
     ...(isStrongHit(damage, target.maxHp, fromStage, part.wound) ? { strong: true as const } : {}),
+    ...(alertTo === 'critical' ? { criticalFlash: true as const } : {}),
+    ...(isPlayerTarget
+      ? {
+          readout: {
+            integrityLoss: split.total,
+            integrity: Math.max(0, target.hp),
+            maxIntegrity: target.maxHp,
+            partHp: part.hp,
+            partMaxHp: part.maxHp,
+          },
+        }
+      : {}),
   })
   if (stageIndex(part.wound) > stageIndex(fromStage)) {
     ctx.events.push({
@@ -173,6 +187,8 @@ export function resolveAttack(
       maxHp: part.maxHp,
     })
   }
+  // Ступень тревоги игрока (при гибели её нет — alertAfter).
+  if (alertTo !== undefined) setAlert(ctx, target, alertTo)
 
   // 6. Износ.
   if (profile.weapon) applyWear(ctx, attacker, profile.weapon, durabilityWear({ damage, armoured: !!armour }, profile.weapon, 'weapon'))
@@ -184,8 +200,8 @@ export function resolveAttack(
     studyItemType(ctx, armour.def.id, STUDY_GAIN.armourHit)
   }
 
-  // Смерть: уничтожена vital-часть или общий HP ≤ 0.
-  const vitalDestroyed = def.tags.includes('vital') && part.hp <= 0
+  // Смерть: общий HP ≤ 0; монстр гибнет и от разрушения vital-части, киборг — нет (ADR 0003).
+  const vitalDestroyed = !isPlayerTarget && def.tags.includes('vital') && part.hp <= 0
   if (vitalDestroyed || target.hp <= 0) {
     killCreature(ctx, target, attacker, vitalDestroyed ? 'vital' : 'hp', vitalDestroyed ? part.defId : undefined)
   } else if (profile.damageType === 'cold' && damage > 0 && applySlow(target, state.now)) {

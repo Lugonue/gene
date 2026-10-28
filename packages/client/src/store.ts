@@ -53,6 +53,8 @@ export const store = reactive({
   sceneEnabled: true,
   /** Очередь сцен окна-сцены; seq растёт с каждым изменением после хода, epoch — при переподключении. */
   scene: { queue: [], seq: 0, epoch: 0 } as SceneState,
+  /** Счётчик вспышек по краю карты: растёт с каждой (смена перезапускает анимацию, 0 — вспышек не было), как scene.seq. */
+  flashSeq: 0,
 })
 
 export interface AnimFrame {
@@ -76,6 +78,9 @@ export function pushLog(messages: LogMessage[], replace = false): void {
       last.count++
       last.turn = m.turn
       last.fresh = !replace
+      // Пометка (цифры урона) у свёрнутого повтора — от последнего удара.
+      if (m.note !== undefined) last.note = m.note
+      else delete last.note
       continue
     }
     store.log.push({ ...m, id: nextLogId++, fresh: !replace, count: 1 })

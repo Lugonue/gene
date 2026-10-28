@@ -1,6 +1,6 @@
 # Ступени тревоги: опасное и критическое состояние
 
-Status: ready-for-agent
+Status: resolved
 Type: task
 
 Спека: `../spec.md`.

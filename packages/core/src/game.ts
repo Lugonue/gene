@@ -13,6 +13,7 @@ import { noticeObjects } from './world/notice'
 import type { MoveFrame, ProjectileTrail } from './protocol'
 import { fovRadius, organicHealCap } from './combat/formulas'
 import { applyRegen } from './health'
+import { isAlertRaised } from './alert'
 import { threatToPlayer } from './threat'
 import { actorRef } from './combat/attack'
 import {
@@ -202,6 +203,8 @@ function isStopEvent(e: GameEvent, playerId: string): boolean {
       return e.target.id === playerId
     case 'woundChanged':
       return e.creature.id === playerId
+    case 'alertChanged':
+      return isAlertRaised(e)
     default:
       return false
   }

@@ -1,7 +1,8 @@
 <script setup lang="ts">
 // Карта рисуется на canvas: по символу на клетку, без DOM-элемента на клетку.
-import { onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { store } from '../store'
+import { alertLook } from '../alertFx'
 import { PLAYER_COLOR, TILE_COLORS } from '../colors'
 import { aimPath, heldRangedWeapon } from '../aim'
 import { cellIndex } from '../grid'
@@ -11,6 +12,7 @@ const CELL_H = 18
 const FONT = '15px "DejaVu Sans Mono", Consolas, "Courier New", monospace'
 
 const canvas = ref<HTMLCanvasElement | null>(null)
+const look = computed(() => alertLook(store.view?.player.alert ?? 'none'))
 const emit = defineEmits<{ hover: [pos: { x: number; y: number } | null]; pick: [pos: { x: number; y: number }] }>()
 
 function draw(): void {
@@ -112,19 +114,70 @@ watch(() => [store.view, store.inspect, store.anim, store.aim, store.projectile]
 </script>
 
 <template>
-  <canvas
-    ref="canvas"
-    class="map"
-    @mousemove="emit('hover', cellFromEvent($event))"
-    @mouseleave="emit('hover', null)"
-    @click="(e) => { const c = cellFromEvent(e); if (c) emit('pick', c) }"
-  />
+  <div class="map-box">
+    <canvas
+      ref="canvas"
+      class="map"
+      @mousemove="emit('hover', cellFromEvent($event))"
+      @mouseleave="emit('hover', null)"
+      @click="(e) => { const c = cellFromEvent(e); if (c) emit('pick', c) }"
+    />
+    <!-- Слои тревоги поверх карты: не перехватывают мышь и не блокируют ввод. -->
+    <div v-if="look.vignette" class="vignette" />
+    <div v-if="store.flashSeq > 0" :key="store.flashSeq" class="flash" />
+  </div>
 </template>
 
 <style scoped>
+.map-box {
+  position: relative;
+}
 .map {
   display: block;
   background: #000;
   image-rendering: pixelated;
+}
+.vignette,
+.flash {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+/* Мягкая пульсация: слабая и медленная, чтобы не утомлять. */
+.vignette {
+  box-shadow: inset 0 0 60px 14px rgba(200, 20, 20, 0.55);
+  animation: vignette-pulse 2.6s ease-in-out infinite;
+}
+@keyframes vignette-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+/* Яркая вспышка по краю — однократно гаснет. */
+.flash {
+  box-shadow: inset 0 0 90px 30px rgba(255, 30, 30, 0.95);
+  opacity: 0;
+  animation: edge-flash 0.6s ease-out;
+}
+@keyframes edge-flash {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vignette {
+    animation: none;
+    opacity: 0.7;
+  }
+  .flash {
+    display: none;
+  }
 }
 </style>

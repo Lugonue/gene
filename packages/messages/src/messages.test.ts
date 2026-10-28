@@ -13,7 +13,7 @@ import {
   type WordForms,
   type WoundStage,
 } from '@gene/data'
-import type { ActorRef, AttackRef, GameEvent, HitSeverity } from '@gene/core'
+import type { ActorRef, AlertStage, AttackRef, GameEvent, HitSeverity } from '@gene/core'
 import { fill, partWords, renderEvents } from './index'
 
 const PLAYER: ActorRef = { id: 'p', kind: 'player' }
@@ -226,6 +226,44 @@ describe('сообщения: падежи и род (контрольные п�
   })
 })
 
+describe('сообщения Ядра о ступенях тревоги', () => {
+  const alert = (from: AlertStage, to: AlertStage, integrity: number): GameEvent => ({ type: 'alertChanged', from, to, integrity })
+
+  it('вход в ступень — системное сообщение Ядра, по несколько вариантов на ступень', () => {
+    for (const [from, to] of [
+      ['none', 'danger'],
+      ['none', 'critical'],
+      ['danger', 'critical'],
+    ] as [AlertStage, AlertStage][]) {
+      const texts = new Set<string>()
+      for (let turn = 0; turn < 40; turn++) {
+        const out = renderEvents([alert(from, to, 20)], 'p', { seed: 1, turn })
+        expect(out).toHaveLength(1)
+        expect(out[0]!.kind).toBe('system')
+        expect(out[0]!.text).toMatch(/^\[ЯДРО\] /)
+        expect(out[0]!.text).not.toMatch(/[{}]|стабилизирована/)
+        texts.add(out[0]!.text)
+      }
+      expect(texts.size, `${from}→${to}`).toBeGreaterThanOrEqual(2)
+    }
+    const critical = renderEvents([alert('danger', 'critical', 20)], 'p').map((m) => m.text)
+    const danger = renderEvents([alert('none', 'danger', 45)], 'p').map((m) => m.text)
+    expect(critical).not.toEqual(danger)
+  })
+
+  it('выход вниз по тяжести — «Целостность стабилизирована: N%»', () => {
+    for (const [from, to] of [
+      ['critical', 'danger'],
+      ['danger', 'none'],
+      ['critical', 'none'],
+    ] as [AlertStage, AlertStage][]) {
+      expect(renderEvents([alert(from, to, 31)], 'p')).toEqual([
+        { kind: 'system', turn: 0, text: '[ЯДРО] Целостность стабилизирована: 31%.' },
+      ])
+    }
+  })
+})
+
 describe('сообщения автоисследования и бега', () => {
   it('замеченные объекты и окончание — голосом Ядра', () => {
     const events: GameEvent[] = [
@@ -306,6 +344,49 @@ describe('сообщения дальнего боя', () => {
   })
 })
 
+
+describe('цифры входящего урона в журнале', () => {
+  const blow = (over: Partial<Extract<GameEvent, { type: 'attackHit' }>>): GameEvent => ({
+    type: 'attackHit',
+    attacker: mon('goblin_brute'),
+    target: PLAYER,
+    attack: natural('fist'),
+    partId: 'head',
+    partMaterial: 'organic',
+    damage: 7,
+    absorbed: 0,
+    severity: 'medium',
+    readout: { integrityLoss: 7, integrity: 18, maxIntegrity: 40, partHp: 3, partMaxHp: 12 },
+    ...over,
+  })
+  const hitMsg = (e: GameEvent) => renderEvents([e], 'p')[0]!
+
+  it('удар по игроку: цифры в отдельной пометке, текст без цифр', () => {
+    const m = hitMsg(blow({}))
+    expect(m.note).toBe('−7 · Целостность 18/40 · голова 3/12')
+    expect(m.text).not.toContain('18/40')
+  })
+
+  it('броня что-то поглотила — фрагмент про броню', () => {
+    const m = hitMsg(blow({ absorbed: 3, armourDefId: ARMOURS[0]!.id }))
+    expect(m.note).toBe('−7 · броня −3 · Целостность 18/40 · голова 3/12')
+  })
+
+  it('первое число — убыль целостности (с множителем торса), а не урон по части', () => {
+    const m = hitMsg(blow({ damage: 6, readout: { integrityLoss: 9, integrity: 18, maxIntegrity: 40, partHp: 3, partMaxHp: 12 } }))
+    expect(m.note).toBe('−9 · Целостность 18/40 · голова 3/12')
+  })
+
+  it('полное поглощение — «урон заблокирован» без цифр', () => {
+    const m = hitMsg(blow({ damage: 0, absorbed: 5, armourDefId: ARMOURS[0]!.id, severity: 'absorbed' }))
+    expect(m.note).toBe('урон заблокирован')
+  })
+
+  it('удар по монстру — без пометки', () => {
+    const m = hitMsg(blow({ attacker: PLAYER, target: mon('goblin_brute'), readout: undefined }))
+    expect(m.note).toBeUndefined()
+  })
+})
 
 describe('сообщения магических типов урона', () => {
   const MAGIC = MAGIC_DAMAGE_TYPES
